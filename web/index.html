@@ -29,5 +29,45 @@
     }
   </script>
   <script src="main.dart.js" type="application/javascript"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.14.4/firebase-app.js"></script>
+  <!-- Firebase Configuration -->
+  <script>
+    var firebaseConfig = {
+      apiKey: "...",
+      authDomain: "[YOUR_PROJECT].firebaseapp.com",
+      databaseURL: "https://[YOUR_PROJECT].firebaseio.com",
+      projectId: "[YOUR_PROJECT]",
+      storageBucket: "[YOUR_PROJECT].appspot.com",
+      messagingSenderId: "...",
+      appId: "1:...:web:...",
+      measurementId: "G-...",
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-analytics.js"></script>
+
+<script>
+  // Your web app's Firebase configuration
+  var firebaseConfig = {
+    apiKey: "AIzaSyDle1K-aGL2jyw_Q3kkaEWr7SrWTus8JXI",
+    authDomain: "taskapp-a75c4.firebaseapp.com",
+    databaseURL: "https://taskapp-a75c4.firebaseio.com",
+    projectId: "taskapp-a75c4",
+    storageBucket: "taskapp-a75c4.appspot.com",
+    messagingSenderId: "500481206109",
+    appId: "1:500481206109:web:63849defce0a21c5dc2ab4",
+    measurementId: "G-36P3TVJM5L"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+</script>
 </body>
 </html>

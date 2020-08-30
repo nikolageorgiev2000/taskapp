@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 // Import the firebase_core plugin
 import 'package:firebase_core/firebase_core.dart';
 
@@ -72,13 +73,29 @@ class _MenuControllerState extends State<MenuController> {
   final _bucket = PageStorageBucket();
 
   List<Widget> pages = [
-    TaskList(PageStorageKey("Task Page Key")),
+    TaskList(PageStorageKey("Task Page Key"), false),
     Text("Events"),
-    Text("Stats")
+    Text("Stats"),
+    Text("Settings")
+  ];
+
+  List<Widget> floatingButtons = [
+    FloatingActionButton(
+      child: Icon(Icons.add),
+      // label: Text("NEW TASK"),
+      backgroundColor: Colors.lightBlueAccent.shade200,
+      onPressed: null,
+    ),
+    null,
+    null,
+    null
   ];
 
   void _onItemTapped(int index) {
     setState(() {
+      //check if bottomNavMenu icon is tapped more than once
+      pages[0] =
+          TaskList(PageStorageKey("Task Page Key"), (index == _selectedIndex));
       _selectedIndex = index;
     });
   }
@@ -86,19 +103,31 @@ class _MenuControllerState extends State<MenuController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(leading: Icon(Icons.ac_unit)),
-      //Use PageStorage to save the scroll offset using the ScrollController in TaskList
-      body: PageStorage(bucket: _bucket, child: pages[_selectedIndex]),
+      // appBar: AppBar(
+      //     centerTitle: true,
+      //     title: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      //       Align(alignment: Alignment.center, child: Text("hi")),
+      //       Align(alignment: Alignment.centerRight, child: Icon(Icons.settings))
+      //     ])),
+      body: SafeArea(
+          //Use PageStorage to save the scroll offset using the ScrollController in TaskList
+          child: PageStorage(bucket: _bucket, child: pages[_selectedIndex])),
+      floatingActionButton: floatingButtons[_selectedIndex],
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.miniCenterDocked,
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.alarm_on), label: "Tasks"),
           BottomNavigationBarItem(icon: Icon(Icons.today), label: "Events"),
           BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: "Stats"),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Options"),
         ],
         iconSize: 30,
         currentIndex: _selectedIndex,
         showUnselectedLabels: false,
         selectedItemColor: Colors.lightBlue,
+        unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
     );
@@ -106,7 +135,11 @@ class _MenuControllerState extends State<MenuController> {
 }
 
 class TaskList extends StatefulWidget {
-  TaskList(Key key) : super(key: key);
+  final bool _doubleTapped;
+
+  TaskList(Key key, this._doubleTapped) : super(key: key);
+
+  bool get doubleTapped => _doubleTapped;
 
   @override
   _TaskListState createState() => _TaskListState();
@@ -115,12 +148,125 @@ class TaskList extends StatefulWidget {
 class _TaskListState extends State<TaskList> {
   ScrollController scrollController = ScrollController();
 
+  bool flatButtonPressed = false;
+
+  void createTask() {}
+
+  void editTask(index) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 1000,
+          color: Colors.white,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Text('Modal BottomSheet'),
+                RaisedButton(
+                  child: const Text('Close BottomSheet'),
+                  onPressed: () => Navigator.pop(context),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+      enableDrag: false,
+    );
+  }
+
   Widget createTaskCard(int index) {
+    // return Stack(
+    //   children: [
+    //     InkWell(
+    //         onLongPress: () {
+    //           editTask(index);
+    //         },
+    //         child: Card(
+    //           child: Padding(
+    //             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+    //             child: Row(
+    //               mainAxisSize: MainAxisSize.min,
+    //               children: [
+    //                 // LEFT COLUMN
+    //                 Expanded(
+    //                     child: Container(
+    //                         alignment: Alignment.topLeft,
+    //                         decoration: BoxDecoration(
+    //                             border: Border(
+    //                                 right: BorderSide(color: Colors.grey))),
+    //                         child: Column(
+    //                           children: [
+    //                             Row(children: [Text(index.toString())]),
+    //                             Divider(
+    //                               color: Colors.transparent,
+    //                               height: 5,
+    //                             ),
+    //                             Row(children: [Text(index.toString())]),
+    //                             Divider(
+    //                               color: Colors.transparent,
+    //                               height: 5,
+    //                             ),
+    //                             Row(children: [Text(index.toString())]),
+    //                           ],
+    //                           mainAxisSize: MainAxisSize.max,
+    //                         ))),
+    //               ],
+    //             ),
+    //           ),
+    //         )),
+    //     Padding(
+    //       padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+    //       child: Row(
+    //         mainAxisSize: MainAxisSize.min,
+    //         children: [
+    //           // RIGHT COLUMN
+    //           Align(
+    //               alignment: Alignment.topRight,
+    //               child: Column(
+    //                 children: [
+    //                   Row(
+    //                     children: [
+    //                       FlatButton.icon(
+    //                         icon: Icon(Icons.play_arrow),
+    //                         onPressed: () {
+    //                           print("Track - Pressed");
+    //                         },
+    //                         label: Text("1:000005"),
+    //                       )
+    //                     ],
+    //                   ),
+    //                   Row(
+    //                     children: [
+    //                       FlatButton.icon(
+    //                         icon: Icon(Icons.check),
+    //                         label: Text("Done"),
+    //                         padding: EdgeInsets.zero,
+    //                         onPressed: () {
+    //                           print("Done - Pressed");
+    //                         },
+    //                       )
+    //                     ],
+    //                   )
+    //                 ],
+    //               ))
+    //         ],
+    //       ),
+    //     )
+    //   ],
+    // );
+
     return Card(
       child: InkWell(
           splashColor: Colors.blue.withAlpha(30),
           onLongPress: () {
-            print('Card long-pressed.');
+            print(flatButtonPressed);
+            if (!flatButtonPressed) {
+              editTask(index);
+            }
           },
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -129,36 +275,80 @@ class _TaskListState extends State<TaskList> {
               children: [
                 // LEFT COLUMN
                 Expanded(
-                    child: Align(
+                    child: Container(
                         alignment: Alignment.topLeft,
+                        decoration: BoxDecoration(
+                            border:
+                                Border(right: BorderSide(color: Colors.grey))),
                         child: Column(
-                          children: [Text(index.toString())],
+                          children: [
+                            Row(children: [Text(index.toString())]),
+                            Divider(
+                              color: Colors.transparent,
+                              height: 5,
+                            ),
+                            Row(children: [Text(index.toString())]),
+                            Divider(
+                              color: Colors.transparent,
+                              height: 5,
+                            ),
+                            Row(children: [Text(index.toString())]),
+                          ],
                           mainAxisSize: MainAxisSize.max,
                         ))),
+                VerticalDivider(color: Colors.grey),
                 // RIGHT COLUMN
                 Align(
                     alignment: Alignment.topRight,
-                    child: Column(
-                      children: [
-                        Align(
-                            alignment: Alignment.bottomRight,
-                            child: Row(
-                              children: [
-                                IconButton(
-                                    icon: Icon(Icons.play_arrow),
-                                    onPressed: null),
-                                Text("1:05")
-                              ],
-                            )),
-                        Row(
+                    child: GestureDetector(
+                        child: Column(
                           children: [
-                            IconButton(
-                                icon: Icon(Icons.check), onPressed: null),
-                            Text("Complete?")
+                            Row(
+                              children: [
+                                FlatButton.icon(
+                                  icon: Icon(Icons.play_arrow),
+                                  onPressed: () {
+                                    print("Track - Pressed");
+                                    flatButtonPressed = false;
+                                  },
+                                  label: Text("1:000005"),
+                                )
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                FlatButton.icon(
+                                  icon: Icon(Icons.check),
+                                  label: Text("Done"),
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    print("Done - Pressed");
+                                    flatButtonPressed = false;
+                                  },
+                                )
+                              ],
+                            )
                           ],
-                        )
-                      ],
-                    ))
+                        ),
+                        // Detect when column is pressed and released to avoid unwanted interaction with inksplash
+                        onTapDown: (details) {
+                          flatButtonPressed = true;
+                          print("DOWN");
+                        },
+                        onTapUp: (details) {
+                          flatButtonPressed = false;
+                        },
+                        onTapCancel: () {
+                          flatButtonPressed = false;
+                        },
+                        onLongPressStart: (details) {
+                          flatButtonPressed = true;
+                          print("START");
+                        },
+                        onLongPressEnd: (details) {
+                          flatButtonPressed = false;
+                          print("END");
+                        }))
               ],
             ),
           )),
@@ -170,7 +360,16 @@ class _TaskListState extends State<TaskList> {
   //Create list of tasks
   @override
   Widget build(BuildContext context) {
+    //scroll to top if TaskList icon in menu tapped while already on page
+    if (this.widget.doubleTapped) {
+      print(scrollController.position.pixels);
+      scrollController.animateTo(scrollController.initialScrollOffset,
+          duration: Duration(
+              milliseconds: min(scrollController.position.pixels ~/ 2, 2000)),
+          curve: Curves.easeOutCubic);
+    }
     return ListView.builder(
+        reverse: false,
         controller: scrollController,
         /*Use itermCount (length of list) and itemExtent (height of an item)
         for improved speed switching between tabs (rebuilding list) */
@@ -181,6 +380,22 @@ class _TaskListState extends State<TaskList> {
         });
   }
 }
+
+class Task {
+  final String task_uid;
+  String name;
+  String description;
+  double epochDue;
+  String location;
+  bool done;
+  String event_uid;
+  Category task_category;
+  double epochLastEdit;
+
+  Task(this.task_uid);
+}
+
+enum Category { Default, Work, School, Hobby, Health, Social, Family, Daily }
 
 /*
 Task document format:
