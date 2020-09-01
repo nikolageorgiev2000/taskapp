@@ -1,3 +1,3 @@
 # taskapp
 
-An app for managing upcoming tasks and events, aimed at University students. Name not final.
+An app for managing upcoming tasks and events, aimed at University students. In progress.
