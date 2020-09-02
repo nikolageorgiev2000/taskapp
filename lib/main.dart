@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
@@ -250,124 +251,309 @@ class TaskCard extends StatefulWidget {
 class _TaskCardState extends State<TaskCard> {
   bool flatButtonPressed = false;
 
+  // temporarily holds the place of actual task retreived from Firestore (needed to see edit changes before Firestore functionality implemented).
+  // basically holds place for widget.task since widget.task can't be updated without Firestore (don't have access from child)
+  Task tempTask;
+
   String formatDate(DateTime dateTime) {
-    return "${dateTime.day.toString()}-${dateTime.month.toString()}-${dateTime.year.toString()}    ${dateTime.millisecondsSinceEpoch}";
+    return "${dateTime.day.toString()}-${dateTime.month.toString()}-${dateTime.year.toString()}";
+  }
+
+  String formatTime(TimeOfDay time) {
+    return "${time.hour}:${time.minute}";
   }
 
   int timeToMilliseconds(TimeOfDay timeOfDay) {
     return 1000 * (3600 * timeOfDay.hour + 60 * timeOfDay.minute);
   }
 
+  void saveChanges(newTask) {
+    tempTask = newTask.clone();
+  }
+
+  bool taskChanged(Task newTask) {
+    return tempTask.changedThroughEdit(newTask);
+
+    // change to this when Firestore implemented
+    // return widget.task.changedThroughEdit(newTask);
+  }
+
+  void deleteTask() {}
+
   void editTask() async {
-    // wait for editing to be finished on modal sheet
-    await showModalBottomSheet<void>(
-        isScrollControlled: true,
-        context: context,
-        enableDrag: false,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setModalState) {
-            // initialize initial date and time task is due
-            DateTime initDate =
-                DateTime.fromMillisecondsSinceEpoch(this.widget.task.epochDue);
-            TimeOfDay initTime = TimeOfDay.fromDateTime(initDate);
+    // determines if dialog pops up to confirm/discard/cancel changes when user taps away from modalsheet
+    bool editting = true;
+    // checks if the current changes have been saved with save button
+    bool saved = false;
 
-            // functions to edit date and time with nice UI
-            Future<void> _showDatePicker() async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: initDate,
-                firstDate: DateTime.fromMillisecondsSinceEpoch(0),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null && picked != initDate) {
-                setModalState(() {
-                  widget.task.epochDue = picked.millisecondsSinceEpoch +
-                      timeToMilliseconds(initTime);
-                });
+    //delete when Firestore functions implemented
+    if (tempTask == null) {
+      tempTask = widget.task.clone();
+    }
+    // task to store edit made by user
+    Task newTask = tempTask.clone();
+
+    while (editting) {
+      // wait for editing to be finished on modal sheet
+      await showModalBottomSheet<void>(
+          isScrollControlled: true,
+          context: context,
+          enableDrag: false,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (BuildContext context, StateSetter setModalState) {
+              // initialize initial date and time task is due
+              DateTime initDate =
+                  DateTime.fromMillisecondsSinceEpoch(newTask.epochDue);
+              TimeOfDay initTime = TimeOfDay.fromDateTime(initDate);
+              Category initCategory = newTask.taskCategory;
+
+              // functions to edit date and time with nice UI
+              Future<void> _showDatePicker() async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: initDate,
+                  firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null && picked != initDate) {
+                  setModalState(() {
+                    newTask.epochDue = picked.millisecondsSinceEpoch +
+                        timeToMilliseconds(initTime);
+                  });
+                }
               }
-            }
 
-            Future<void> _showTimePicker() async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: initTime,
-              );
-              if (picked != null && picked != initTime) {
-                setModalState(() {
-                  print(widget.task.epochDue);
-                  widget.task.epochDue = initDate.millisecondsSinceEpoch -
-                      timeToMilliseconds(initTime) +
-                      timeToMilliseconds(picked);
-                  print(widget.task.epochDue);
-                });
+              Future<void> _showTimePicker() async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: initTime,
+                );
+                if (picked != null && picked != initTime) {
+                  setModalState(() {
+                    newTask.epochDue = initDate.millisecondsSinceEpoch -
+                        timeToMilliseconds(initTime) +
+                        timeToMilliseconds(picked);
+                  });
+                }
               }
-            }
 
-            // Editable UI
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                //Save/Cancel Task
+              // Editable UI
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Buttons to Save/Cancel Task
+                  Center(
+                      child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                          icon: Icon(Icons.save),
+                          onPressed: () {
+                            saveChanges(newTask);
+                            saved = true;
+                          }),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () async {
+                          bool delete = false;
+                          await showDialog(
+                              context: context,
+                              child: AlertDialog(
+                                content: Text("Delete task?"),
+                                actions: [
+                                  FlatButton(
+                                      child: Text("Confirm"),
+                                      onPressed: () {
+                                        delete = true;
+                                        Navigator.of(context).pop();
+                                      }),
+                                  FlatButton(
+                                      child: Text("Cancel"),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      })
+                                ],
+                              ));
+                          // if confirmed deletion, end editing and pop out of modal sheet
+                          if (delete) {
+                            deleteTask();
+                            editting = false;
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      ),
+                    ],
+                  )),
 
-                //Task Name
-                Text("Edit Task"),
-
-                //Description
-                TextField(
-                  maxLength: 280,
-                  minLines: 1,
-                  maxLines: 10,
-                  scrollPadding: EdgeInsets.all(2),
-                  decoration: InputDecoration(
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(1), gapPadding: 1),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(1), gapPadding: 1),
-                    labelText: 'Task Description',
-                    counterText: null,
-                    fillColor: Colors.white,
-                    filled: true,
+                  Padding(
+                    padding: EdgeInsets.all(5),
                   ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (inputString) {
-                    print("Submitted Text description: " + inputString);
-                  },
-                ),
 
-                //Date Due
-                FlatButton(
-                    onPressed: () {
-                      _showDatePicker();
+                  //Task Name
+                  TextFormField(
+                    initialValue: tempTask.name,
+                    maxLength: 280,
+                    minLines: 1,
+                    maxLines: 10,
+                    scrollPadding: EdgeInsets.all(2),
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(1),
+                          gapPadding: 1),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(1),
+                          gapPadding: 1),
+                      labelText: 'Task Name',
+                      counterText: null,
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onChanged: (inputString) {
+                      newTask.name = inputString;
                     },
-                    child: Text(formatDate(DateTime.fromMillisecondsSinceEpoch(
-                        widget.task.epochDue)))),
-                //Time Due
-                FlatButton(
-                    onPressed: () {
-                      _showTimePicker();
-                    },
-                    child: Text(initTime.toString())),
-
-                //Location
-
-                //Category
-
-                //Padding to move modal sheet up with keyboard
-                AnimatedPadding(
-                  padding: MediaQuery.of(context).viewInsets,
-                  duration: const Duration(milliseconds: 100),
-                  curve: Curves.decelerate,
-                  child: new Container(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(),
                   ),
-                ),
-              ],
-            );
+
+                  //Description
+                  TextFormField(
+                    initialValue: tempTask.description,
+                    maxLength: 280,
+                    minLines: 1,
+                    maxLines: 10,
+                    scrollPadding: EdgeInsets.all(2),
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(1),
+                          gapPadding: 1),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(1),
+                          gapPadding: 1),
+                      labelText: 'Task Description',
+                      counterText: null,
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onChanged: (inputString) {
+                      newTask.description = inputString;
+                    },
+                  ),
+
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    //Date Due
+                    FlatButton(
+                        onPressed: () {
+                          _showDatePicker();
+                        },
+                        child: Text(formatDate(
+                            DateTime.fromMillisecondsSinceEpoch(
+                                newTask.epochDue)))),
+                    //Time Due
+                    FlatButton(
+                        onPressed: () {
+                          _showTimePicker();
+                        },
+                        child: Text(formatTime(initTime))),
+                  ]),
+
+                  //Location
+                  TextFormField(
+                    initialValue: tempTask.location,
+                    maxLength: 280,
+                    minLines: 1,
+                    maxLines: 10,
+                    scrollPadding: EdgeInsets.all(2),
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(1),
+                          gapPadding: 1),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(1),
+                          gapPadding: 1),
+                      labelText: 'Task Location',
+                      counterText: null,
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onChanged: (inputString) {
+                      newTask.location = inputString;
+                    },
+                  ),
+
+                  //Category selection
+                  DropdownButton<Category>(
+                      value: initCategory,
+                      items: List.generate(
+                          Category.values.length,
+                          (i) => DropdownMenuItem(
+                                value: Category.values[i],
+                                child: Text(Category.values[i]
+                                    .toString()
+                                    .split('.')
+                                    .last),
+                              )),
+                      onChanged: (val) {
+                        setModalState(() {
+                          newTask.taskCategory = val;
+                        });
+                      }),
+
+                  Padding(
+                    padding: EdgeInsets.all(5),
+                  ),
+
+                  //Padding to move modal sheet up with keyboard
+                  AnimatedPadding(
+                    padding: MediaQuery.of(context).viewInsets,
+                    duration: const Duration(milliseconds: 100),
+                    curve: Curves.decelerate,
+                    child: new Container(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(),
+                    ),
+                  ),
+                ],
+              );
+            });
           });
-        });
+
+      // when user presses out of modal sheet, check they've saved
+      if (!saved && editting && taskChanged(newTask)) {
+        await showDialog(
+            context: context,
+            child: AlertDialog(
+              content: Text("Save changes?"),
+              actions: [
+                FlatButton(
+                    child: Text("Confirm"),
+                    onPressed: () {
+                      saveChanges(newTask);
+                      editting = false;
+                      Navigator.of(context).pop();
+                    }),
+                FlatButton(
+                    child: Text("Discard"),
+                    onPressed: () {
+                      editting = false;
+                      Navigator.of(context).pop();
+                    }),
+                FlatButton(
+                    child: Text("Cancel"),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    })
+              ],
+            ));
+      } else {
+        editting = false;
+      }
+    }
 
     // Done editing task, now rebuild TaskCard to show changes on TaskList
     setState(() {});
@@ -505,6 +691,36 @@ class Task {
       this.location = "",
       this.taskCategory = Category.None,
       String eventUID = ""});
+
+  Task clone() {
+    return Task(name, taskUID, epochDue,
+        epochLastEdit: epochLastEdit,
+        epochCompleted: epochCompleted,
+        description: description,
+        location: location,
+        taskCategory: taskCategory,
+        eventUID: eventUID);
+  }
+
+  bool changedThroughEdit(Task other) {
+    return !(other.name == name &&
+        other.description == description &&
+        other.epochDue == epochDue &&
+        other.location == location &&
+        other.taskCategory == taskCategory);
+  }
+
+  // @override
+  // bool operator ==(Object other) =>
+  //     other is Task &&
+  //     (other.name == name &&
+  //         other.description == description &&
+  //         other.epochDue == epochDue &&
+  //         other.location == location &&
+  //         other.taskCategory == taskCategory);
+
+  // @override
+  // int get hashCode => this.hashCode;
 }
 
 enum Category { None, Work, School, Hobby, Health, Social, Family, Chores }
