@@ -220,7 +220,6 @@ class _TaskListState extends State<TaskList> {
   Widget build(BuildContext context) {
     //scroll to top if TaskList icon in menu tapped while already on page
     if (this.widget.doubleTapped) {
-      print(scrollController.position.pixels);
       scrollController.animateTo(scrollController.initialScrollOffset,
           duration: Duration(
               milliseconds: min(scrollController.position.pixels ~/ 2, 2000)),
@@ -265,7 +264,6 @@ class _TaskCardState extends State<TaskCard> {
           customBorder: cardBorder,
           splashColor: Colors.blue.withAlpha(30),
           onLongPress: () async {
-            print(flatButtonPressed);
             if (!flatButtonPressed) {
               //delete when Firestore functions implemented
               if (tempTask == null) {
@@ -462,7 +460,9 @@ Future<Task> editTask(BuildContext context, Task currentTask) async {
                     IconButton(
                         icon: Icon(Icons.save),
                         onPressed: () {
-                          saveChanges(currentTask, newTask);
+                          // saveChanges(currentTask, newTask);
+                          //temporary save method
+                          currentTask = newTask.clone();
                           saved = true;
                         }),
                     IconButton(
@@ -504,7 +504,7 @@ Future<Task> editTask(BuildContext context, Task currentTask) async {
 
                 //Task Name
                 TextFormField(
-                  initialValue: currentTask.name,
+                  initialValue: newTask.name,
                   maxLength: 70,
                   minLines: 1,
                   maxLines: 10,
@@ -527,7 +527,7 @@ Future<Task> editTask(BuildContext context, Task currentTask) async {
 
                 //Description
                 TextFormField(
-                  initialValue: currentTask.description,
+                  initialValue: newTask.description,
                   maxLength: 280,
                   minLines: 1,
                   maxLines: 10,
@@ -567,7 +567,7 @@ Future<Task> editTask(BuildContext context, Task currentTask) async {
 
                 //Location
                 TextFormField(
-                  initialValue: currentTask.location,
+                  initialValue: newTask.location,
                   maxLength: 70,
                   minLines: 1,
                   maxLines: 10,
@@ -635,7 +635,10 @@ Future<Task> editTask(BuildContext context, Task currentTask) async {
               FlatButton(
                   child: Text("Confirm"),
                   onPressed: () {
-                    saveChanges(currentTask, newTask);
+                    // saveChanges(currentTask, newTask);
+                    //temporary save method
+                    currentTask = newTask.clone();
+
                     editting = false;
                     Navigator.of(context).pop();
                   }),
@@ -658,7 +661,7 @@ Future<Task> editTask(BuildContext context, Task currentTask) async {
   }
 
   // Done editing task, now return the edited task
-  return newTask;
+  return currentTask;
 }
 
 class Task {
