@@ -45,11 +45,22 @@ class _TasksPageState extends State<TasksPage> {
   @override
   Widget build(BuildContext context) {
     if (_tasksLoaded) {
-      return RefreshIndicator(
-        child: TaskList(
-            PageStorageKey("Task Page Key"), false, _tasks, refreshTasks),
-        onRefresh: refreshTasks,
-      );
+      return Scaffold(
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.miniCenterDocked,
+          floatingActionButton: FloatingActionButton(
+            child: Icon(Icons.add),
+            // label: Text("NEW TASK"),
+            backgroundColor: Colors.lightBlueAccent.shade200,
+            onPressed: () {
+              createTask(context, refreshTasks);
+            },
+          ),
+          body: RefreshIndicator(
+            child: TaskList(
+                PageStorageKey("Task Page Key"), false, _tasks, refreshTasks),
+            onRefresh: refreshTasks,
+          ));
     } else {
       return Scaffold();
     }
@@ -94,7 +105,8 @@ class _TaskListState extends State<TaskList> {
         itemCount: this.widget._tasks.length,
         // itemExtent: 150,
         itemBuilder: (context, index) {
-          return TaskCard(this.widget.key, widget._tasks[index]);
+          return TaskCard(
+              this.widget.key, widget._tasks[index], widget.refreshTasks);
         });
   }
 }

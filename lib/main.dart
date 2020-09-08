@@ -82,8 +82,6 @@ class _MenuControllerState extends State<MenuController> {
   int _selectedIndex = 0;
   final _bucket = PageStorageBucket();
   List<Widget> pages;
-  List<Widget> floatingButtons;
-  CollectionReference data;
 
   @override
   void initState() {
@@ -93,19 +91,6 @@ class _MenuControllerState extends State<MenuController> {
       Text("Events"),
       Text("Stats"),
       Text("Settings")
-    ];
-    floatingButtons = [
-      FloatingActionButton(
-        child: Icon(Icons.add),
-        // label: Text("NEW TASK"),
-        backgroundColor: Colors.lightBlueAccent.shade200,
-        onPressed: () {
-          createTask(context);
-        },
-      ),
-      null,
-      null,
-      null
     ];
 
     super.initState();
@@ -129,9 +114,6 @@ class _MenuControllerState extends State<MenuController> {
       body: SafeArea(
           //Use PageStorage to save the scroll offset using the ScrollController in TaskList
           child: PageStorage(bucket: _bucket, child: pages[_selectedIndex])),
-      floatingActionButton: floatingButtons[_selectedIndex],
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.miniCenterDocked,
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: [
