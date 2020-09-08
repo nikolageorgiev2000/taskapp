@@ -27,39 +27,18 @@ class _TasksPageState extends State<TasksPage> {
     super.initState();
   }
 
-  Task taskFromDoc(QueryDocumentSnapshot d) {
-    Map<String, dynamic> docDict = d.data();
-    Task newTask =
-        Task(docDict['name'], docDict['taskUID'], docDict['epochDue']);
-    // Expand with check for the rest of the optional fields...
-    if (docDict['description'] != null) {
-      newTask.description = docDict['description'];
-    }
-    if (docDict['location'] != null) {
-      newTask.location = docDict['location'];
-    }
-    if (docDict['taskCategory'] != null) {
-      newTask.taskCategory = stringToCategory(docDict['taskCategory']);
-    }
-    return newTask;
-  }
-
   void loadTasks() async {
     print("LOADING TASKS");
-    CollectionReference tasks = FirebaseFirestore.instance
-        .collection('users')
-        .doc("test-user")
-        .collection("tasks");
-    var taskSnapshot = await tasks.get();
+    List<Task> loadedTasks = await getTasks();
     setState(() {
-      _tasks = taskSnapshot.docs.map((e) => taskFromDoc(e)).toList();
+      _tasks = loadedTasks;
       _tasksLoaded = true;
     });
     print("TASKS LOADED");
   }
 
   Future<void> refreshTasks() async {
-    print('refreshing');
+    print('REFRESHING TASK PAGE');
     loadTasks();
   }
 

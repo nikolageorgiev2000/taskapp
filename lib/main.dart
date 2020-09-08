@@ -99,25 +99,16 @@ class _MenuControllerState extends State<MenuController> {
         child: Icon(Icons.add),
         // label: Text("NEW TASK"),
         backgroundColor: Colors.lightBlueAccent.shade200,
-        onPressed: createTask,
+        onPressed: () {
+          createTask(context);
+        },
       ),
       null,
       null,
       null
     ];
 
-    CollectionReference data = FirebaseFirestore.instance.collection('users');
     super.initState();
-  }
-
-  createTask() async {
-    // create blank task and edit it
-    Task newTask = Task.blankTask();
-    newTask.epochDue = DateTime.now().millisecondsSinceEpoch;
-    newTask.editTask(context);
-    // if user has saved changes on blank task
-    // assumed editTask returns the input task if user did not want to make changes
-    if (newTask.changedThroughEdit(Task.blankTask())) {}
   }
 
   void _onItemTapped(int index) {
