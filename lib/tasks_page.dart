@@ -27,7 +27,7 @@ class _TasksPageState extends State<TasksPage> {
     super.initState();
   }
 
-  void loadTasks() async {
+  Future<void> loadTasks() async {
     print("LOADING TASKS");
     List<Task> loadedTasks = await getTasks();
     //check if TaskPage is still in widget tree before setting state (fixes error)
@@ -42,7 +42,13 @@ class _TasksPageState extends State<TasksPage> {
 
   Future<void> refreshTasks() async {
     print('REFRESHING TASK PAGE');
-    loadTasks();
+    if (await online()) {
+      FirebaseFirestore.instance.enableNetwork();
+      await loadTasks();
+    } else {
+      FirebaseFirestore.instance.disableNetwork();
+      loadTasks();
+    }
   }
 
   @override

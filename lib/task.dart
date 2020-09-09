@@ -15,7 +15,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
-  VoidCallback refreshTasks;
+  final AsyncCallback refreshTasks;
   TaskCard(Key key, this.task, this.refreshTasks) : super(key: key);
 
   // TaskCard(Key key, this.task, this.refreshTasks) : super(key: key);
@@ -192,12 +192,12 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
   return newTask;
 }
 
-createTask(context, VoidCallback refresh) async {
+createTask(context, AsyncCallback refresh) async {
   // create blank task and edit it
   Task newTask = Task.blankTask();
   newTask.epochDue = DateTime.now().millisecondsSinceEpoch;
   await newTask.editTask(context, refresh);
-  refresh();
+  await refresh();
 }
 
 Future<void> saveTask(Task task) async {
@@ -316,7 +316,7 @@ class Task {
   }
 
   Future<void> editTask(
-      BuildContext context, VoidCallback refreshTaskList) async {
+      BuildContext context, AsyncCallback refreshTaskList) async {
     // determines if dialog pops up to confirm/discard/cancel changes when user taps away from modalsheet
     bool editting = true;
     // checks if the current changes have been saved with save button
@@ -386,7 +386,7 @@ class Task {
                           icon: Icon(Icons.save),
                           onPressed: () async {
                             await saveTask(newTask);
-                            refreshTaskList();
+                            await refreshTaskList();
                             saved = true;
                           }),
                       Row(children: [
@@ -402,7 +402,7 @@ class Task {
                                         child: Text("Confirm"),
                                         onPressed: () async {
                                           await duplicateTask(this);
-                                          refreshTaskList();
+                                          await refreshTaskList();
                                           Navigator.of(context).pop();
                                         }),
                                     FlatButton(
@@ -439,7 +439,7 @@ class Task {
                             // if confirmed deletion, end editing and pop out of modal sheet
                             if (delete) {
                               await deleteTask(this);
-                              refreshTaskList();
+                              await refreshTaskList();
                               editting = false;
                               Navigator.of(context).pop();
                             }
@@ -591,7 +591,7 @@ class Task {
                     child: Text("Confirm"),
                     onPressed: () async {
                       await saveTask(newTask);
-                      refreshTaskList();
+                      await refreshTaskList();
                       editting = false;
                       Navigator.of(context).pop();
                     }),
