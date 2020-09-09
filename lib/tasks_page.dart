@@ -30,10 +30,13 @@ class _TasksPageState extends State<TasksPage> {
   void loadTasks() async {
     print("LOADING TASKS");
     List<Task> loadedTasks = await getTasks();
-    setState(() {
-      _tasks = loadedTasks;
-      _tasksLoaded = true;
-    });
+    //check if TaskPage is still in widget tree before setting state (fixes error)
+    if (this.mounted) {
+      setState(() {
+        _tasks = loadedTasks;
+        _tasksLoaded = true;
+      });
+    }
     print("TASKS LOADED");
   }
 

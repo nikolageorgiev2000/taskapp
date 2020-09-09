@@ -2,6 +2,7 @@ import 'dart:core';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -202,19 +203,42 @@ createTask(context, VoidCallback refresh) async {
 Future<void> saveTask(Task task) async {
   //save task in Firestore (check if it already exists and update it, otherwise create new document)
   CollectionReference tasks = await getTaskCollection();
-  await tasks.doc(task.taskUID).set(task.toMap());
+  if (await online()) {
+    FirebaseFirestore.instance.enableNetwork();
+    await tasks.doc(task.taskUID).set(task.toMap());
+  } else {
+    FirebaseFirestore.instance.disableNetwork();
+    tasks.doc(task.taskUID).set(task.toMap());
+  }
   print("Task saved");
 }
 
 Future<void> deleteTask(Task task) async {
   //delete task from Firestore
   CollectionReference tasks = await getTaskCollection();
-  await tasks.doc(task.taskUID).delete();
+
+  if (await online()) {
+    FirebaseFirestore.instance.enableNetwork();
+    await tasks.doc(task.taskUID).delete();
+  } else {
+    FirebaseFirestore.instance.disableNetwork();
+    tasks.doc(task.taskUID).delete();
+  }
 }
 
 Future<void> duplicateTask(Task task) async {
   Task newTask = task.duplicate();
   await saveTask(newTask);
+}
+
+Future<bool> online() async {
+  var con = await (Connectivity().checkConnectivity());
+  if (con != ConnectivityResult.none) {
+    print("ONLINE!");
+  } else {
+    print("OFFLINE!");
+  }
+  return con != ConnectivityResult.none;
 }
 
 class Task {
@@ -614,7 +638,5 @@ String categoryToString(Category c) {
 }
 
 /*TODO: figure out how to: 
-    add task, 
-    switch between viewing saved/editing task, 
-    add task from event page, add task button
+    use firestore functions offline
 */
