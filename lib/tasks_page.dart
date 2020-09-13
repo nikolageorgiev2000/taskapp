@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
@@ -13,6 +14,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class TasksPage extends StatefulWidget {
+  TasksPage(Key key) : super(key: key);
+
   @override
   _TasksPageState createState() => _TasksPageState();
 }
@@ -21,15 +24,27 @@ class _TasksPageState extends State<TasksPage> {
   List<Task> _tasks = [];
   bool _tasksLoaded = false;
 
+  StreamSubscription<QuerySnapshot> listener;
+
   @override
   void initState() {
     loadTasks();
+
+    listener = taskListListener(refreshTasks);
+
     super.initState();
+  }
+
+  @override
+  void deactivate() {
+    //Cancel listener.
+    listener.cancel();
+    super.deactivate();
   }
 
   Future<void> loadTasks() async {
     print("LOADING TASKS");
-    List<Task> loadedTasks = await getTasks();
+    List<Task> loadedTasks = await getOrderedTasks();
     //check if TaskPage is still in widget tree before setting state (fixes error)
     if (this.mounted) {
       setState(() {
@@ -42,34 +57,18 @@ class _TasksPageState extends State<TasksPage> {
 
   Future<void> refreshTasks() async {
     print('REFRESHING TASK PAGE');
-    if (await online()) {
-      FirebaseFirestore.instance.enableNetwork();
-      await loadTasks();
-    } else {
-      FirebaseFirestore.instance.disableNetwork();
-      loadTasks();
-    }
+    await loadTasks();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_tasksLoaded) {
       return Scaffold(
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.miniCenterDocked,
-          floatingActionButton: FloatingActionButton(
-            child: Icon(Icons.add),
-            // label: Text("NEW TASK"),
-            backgroundColor: Colors.lightBlueAccent.shade200,
-            onPressed: () {
-              createTask(context, refreshTasks);
-            },
-          ),
           body: RefreshIndicator(
-            child: TaskList(
-                PageStorageKey("Task Page Key"), false, _tasks, refreshTasks),
-            onRefresh: refreshTasks,
-          ));
+        child: TaskList(
+            PageStorageKey("Task Page Key"), false, _tasks, refreshTasks),
+        onRefresh: refreshTasks,
+      ));
     } else {
       return Scaffold();
     }
@@ -114,8 +113,7 @@ class _TaskListState extends State<TaskList> {
         itemCount: this.widget._tasks.length,
         // itemExtent: 150,
         itemBuilder: (context, index) {
-          return TaskCard(
-              this.widget.key, widget._tasks[index], widget.refreshTasks);
+          return TaskCard(this.widget.key, widget._tasks[index]);
         });
   }
 }

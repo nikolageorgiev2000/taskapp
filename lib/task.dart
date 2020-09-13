@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:core';
 import 'dart:developer';
 import 'dart:io';
@@ -15,10 +16,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
-  final AsyncCallback refreshTasks;
-  TaskCard(Key key, this.task, this.refreshTasks) : super(key: key);
-
-  // TaskCard(Key key, this.task, this.refreshTasks) : super(key: key);
+  TaskCard(Key key, this.task) : super(key: key);
 
   @override
   _TaskCardState createState() => _TaskCardState();
@@ -26,118 +24,335 @@ class TaskCard extends StatefulWidget {
 
 class _TaskCardState extends State<TaskCard> {
   bool flatButtonPressed = false;
+  Timer taskTimer;
+  int trackedTime;
+
+  void startTask() async {
+    widget.task.epochStart = DateTime.now().millisecondsSinceEpoch;
+    setState(() {
+      // reset tracking state (artefacts from last tracked time otherwise!)
+      trackedTime = 0;
+      taskTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+        setTrackedTime();
+      });
+    });
+    await saveTask(widget.task);
+  }
+
+  void endTask() async {
+    widget.task.workPeriods.add({
+      'start': widget.task.epochStart,
+      'end': DateTime.now().millisecondsSinceEpoch
+    });
+    widget.task.epochStart = -1;
+    await saveTask(widget.task);
+    setState(() {
+      trackedTime = 0;
+      taskTimer.cancel();
+    });
+  }
+
+  void setTrackedTime() {
+    print("Setting time");
+    this.setState(() {
+      trackedTime =
+          (DateTime.now().millisecondsSinceEpoch - widget.task.epochStart) ~/
+              1000;
+    });
+
+    if (widget.task.epochStart < 0) {
+      endTask();
+    }
+  }
+
+  @override
+  void initState() {
+    trackedTime = 0;
+    if (widget.task.epochStart >= 0) {
+      trackedTime = 0;
+      taskTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+        setTrackedTime();
+      });
+    }
+    super.initState();
+  }
+
+  @override
+  void deactivate() {
+    setState(() {
+      trackedTime = 0;
+      taskTimer.cancel();
+    });
+    super.deactivate();
+  }
 
   var cardBorder =
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(15));
   @override
   Widget build(BuildContext context) {
     print("BUILDING TASKCARD: location: ${widget.task.location}");
-    return Card(
-      shape: cardBorder,
-      child: InkWell(
-          customBorder: cardBorder,
-          splashColor: Colors.blue.withAlpha(30),
-          onLongPress: () async {
-            if (!flatButtonPressed) {
-              //delete when Firestore functions implemented
-              widget.task.editTask(context, widget.refreshTasks);
-            }
-          },
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // LEFT COLUMN
-                Expanded(
-                    child: Container(
-                        alignment: Alignment.topLeft,
-                        decoration: BoxDecoration(
-                            border:
-                                Border(right: BorderSide(color: Colors.grey))),
-                        child: Column(
-                          children: [
-                            Row(children: [Text("name: " + widget.task.name)]),
-                            Divider(
-                              color: Colors.transparent,
-                              height: 5,
-                            ),
-                            Row(children: [
-                              Text("epochDue: " +
-                                  widget.task.epochDue.toString())
-                            ]),
-                            Divider(
-                              color: Colors.transparent,
-                              height: 5,
-                            ),
-                            Row(children: [
-                              Text("uid: " +
-                                  widget.task.taskUID.substring(
-                                      0, min(widget.task.taskUID.length, 10)))
-                            ]),
-                          ],
-                          mainAxisSize: MainAxisSize.max,
-                        ))),
-                VerticalDivider(color: Colors.grey),
-                // RIGHT COLUMN
-                Align(
-                    alignment: Alignment.topRight,
-                    child: GestureDetector(
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                FlatButton.icon(
-                                  icon: Icon(Icons.play_arrow,
-                                      color: Colors.blueGrey),
-                                  onPressed: () {
-                                    print("Track - Pressed");
-                                    flatButtonPressed = false;
-                                  },
-                                  label: Text("1:25"),
-                                )
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                FlatButton.icon(
-                                  icon: Icon(Icons.check, color: Colors.green),
-                                  label: Text("Done"),
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    print("Done - Pressed");
-                                    flatButtonPressed = false;
-                                  },
-                                )
-                              ],
-                            )
-                          ],
-                        ),
-                        // Detect when column is pressed and released to avoid unwanted interaction with inksplash
-                        onTapDown: (details) {
-                          flatButtonPressed = true;
-                          print("DOWN");
-                        },
-                        onTapUp: (details) {
-                          flatButtonPressed = false;
-                        },
-                        onTapCancel: () {
-                          flatButtonPressed = false;
-                        },
-                        onLongPressStart: (details) {
-                          flatButtonPressed = true;
-                          print("START");
-                        },
-                        onLongPressEnd: (details) {
-                          flatButtonPressed = false;
-                          print("END");
-                        }))
-              ],
-            ),
-          )),
-      elevation: 3,
-      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-    );
+    if (widget.task.epochCompleted < 0) {
+      return Card(
+        shape: cardBorder,
+        child: InkWell(
+            customBorder: cardBorder,
+            splashColor: Colors.blue.withAlpha(30),
+            onLongPress: () async {
+              if (!flatButtonPressed) {
+                //delete when Firestore functions implemented
+                widget.task.editTask(context);
+              }
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // LEFT COLUMN
+                  Expanded(
+                      child: Container(
+                          alignment: Alignment.topLeft,
+                          decoration: BoxDecoration(
+                              border: Border(
+                                  right: BorderSide(color: Colors.grey))),
+                          child: Column(
+                            children: [
+                              Row(children: [
+                                Text("name: " + widget.task.name)
+                              ]),
+                              Divider(
+                                color: Colors.transparent,
+                                height: 5,
+                              ),
+                              Row(children: [
+                                Text("epochDue: " +
+                                    widget.task.epochDue.toString())
+                              ]),
+                              Divider(
+                                color: Colors.transparent,
+                                height: 5,
+                              ),
+                              Row(children: [
+                                Text("uid: " +
+                                    widget.task.taskUID.substring(
+                                        0, min(widget.task.taskUID.length, 10)))
+                              ]),
+                            ],
+                            mainAxisSize: MainAxisSize.max,
+                          ))),
+                  VerticalDivider(color: Colors.grey),
+                  // RIGHT COLUMN
+                  Align(
+                      alignment: Alignment.topRight,
+                      child: GestureDetector(
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  if (widget.task.epochStart < 0)
+                                    FlatButton.icon(
+                                      icon: Icon(Icons.play_arrow,
+                                          color: Colors.blueGrey),
+                                      onPressed: () async {
+                                        print("Time Started");
+                                        startTask();
+                                        flatButtonPressed = false;
+                                      },
+                                      label: Text("1:25"),
+                                    ),
+                                  if (widget.task.epochStart >= 0)
+                                    FlatButton.icon(
+                                      icon: Icon(Icons.play_arrow,
+                                          color: Colors.blueGrey),
+                                      onPressed: () {
+                                        print("Timer Ended");
+                                        endTask();
+                                        flatButtonPressed = false;
+                                      },
+                                      label: Text(trackedTime.toString()),
+                                    ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  FlatButton.icon(
+                                    icon: Icon(Icons.radio_button_unchecked,
+                                        color: Colors.green),
+                                    label: Text("In Progress"),
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () async {
+                                      await showDialog(
+                                          context: context,
+                                          child: AlertDialog(
+                                            content:
+                                                Text("Mark task as completed?"),
+                                            actions: [
+                                              FlatButton(
+                                                  child: Text("Confirm"),
+                                                  onPressed: () async {
+                                                    widget.task
+                                                        .epochCompleted = DateTime
+                                                            .now()
+                                                        .millisecondsSinceEpoch;
+                                                    endTask();
+                                                    await saveTask(widget.task);
+                                                    Navigator.of(context).pop();
+                                                  }),
+                                              FlatButton(
+                                                  child: Text("Cancel"),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  })
+                                            ],
+                                          ));
+                                      flatButtonPressed = false;
+                                    },
+                                  )
+                                ],
+                              )
+                            ],
+                          ),
+                          // Detect when column is pressed and released to avoid unwanted interaction with inksplash
+                          onTapDown: (details) {
+                            flatButtonPressed = true;
+                            print("DOWN");
+                          },
+                          onTapUp: (details) {
+                            flatButtonPressed = false;
+                          },
+                          onTapCancel: () {
+                            flatButtonPressed = false;
+                          },
+                          onLongPressStart: (details) {
+                            flatButtonPressed = true;
+                            print("START");
+                          },
+                          onLongPressEnd: (details) {
+                            flatButtonPressed = false;
+                            print("END");
+                          }))
+                ],
+              ),
+            )),
+        elevation: 3,
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      );
+    } else {
+      return Card(
+        shape: cardBorder,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // LEFT COLUMN
+              Expanded(
+                  child: Container(
+                      alignment: Alignment.topLeft,
+                      decoration: BoxDecoration(
+                          border:
+                              Border(right: BorderSide(color: Colors.grey))),
+                      child: Column(
+                        children: [
+                          Row(children: [Text("name: " + widget.task.name)]),
+                          Divider(
+                            color: Colors.transparent,
+                            height: 5,
+                          ),
+                          Row(children: [
+                            Text("epochDue: " + widget.task.epochDue.toString())
+                          ]),
+                          Divider(
+                            color: Colors.transparent,
+                            height: 5,
+                          ),
+                          Row(children: [
+                            Text("uid: " +
+                                widget.task.taskUID.substring(
+                                    0, min(widget.task.taskUID.length, 10)))
+                          ]),
+                        ],
+                        mainAxisSize: MainAxisSize.max,
+                      ))),
+              VerticalDivider(color: Colors.grey),
+              // RIGHT COLUMN
+              Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              FlatButton(
+                                onPressed: () {
+                                  print("Track - Pressed");
+                                  flatButtonPressed = false;
+                                },
+                                child: Text("1:25"),
+                              )
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              FlatButton.icon(
+                                icon: Icon(Icons.check_circle_outline,
+                                    color: Colors.green),
+                                label: Text("Completed"),
+                                padding: EdgeInsets.zero,
+                                onPressed: () async {
+                                  await showDialog(
+                                      context: context,
+                                      child: AlertDialog(
+                                        content:
+                                            Text("Mark task as incomplete?"),
+                                        actions: [
+                                          FlatButton(
+                                              child: Text("Confirm"),
+                                              onPressed: () async {
+                                                widget.task.epochCompleted = -1;
+                                                await saveTask(widget.task);
+                                                Navigator.of(context).pop();
+                                              }),
+                                          FlatButton(
+                                              child: Text("Cancel"),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              })
+                                        ],
+                                      ));
+                                  flatButtonPressed = false;
+                                },
+                              )
+                            ],
+                          )
+                        ],
+                      ),
+                      // Detect when column is pressed and released to avoid unwanted interaction with inksplash
+                      onTapDown: (details) {
+                        flatButtonPressed = true;
+                        print("DOWN");
+                      },
+                      onTapUp: (details) {
+                        flatButtonPressed = false;
+                      },
+                      onTapCancel: () {
+                        flatButtonPressed = false;
+                      },
+                      onLongPressStart: (details) {
+                        flatButtonPressed = true;
+                        print("START");
+                      },
+                      onLongPressEnd: (details) {
+                        flatButtonPressed = false;
+                        print("END");
+                      }))
+            ],
+          ),
+        ),
+        elevation: 3,
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      );
+    }
   }
 }
 
@@ -153,14 +368,21 @@ int timeToMilliseconds(TimeOfDay timeOfDay) {
   return 1000 * (3600 * timeOfDay.hour + 60 * timeOfDay.minute);
 }
 
+StreamSubscription<QuerySnapshot> taskListListener(Function toDo) {
+  CollectionReference tasks = getTaskCollection();
+  return tasks.snapshots().listen((event) {
+    toDo();
+  });
+}
+
 Future<bool> taskExists(String taskUID) async {
-  CollectionReference tasks = await getTaskCollection();
+  CollectionReference tasks = getTaskCollection();
   QuerySnapshot taskSnapshot =
       await tasks.where("taskUID", isEqualTo: taskUID).get();
   return taskSnapshot.docs.isNotEmpty;
 }
 
-Future<CollectionReference> getTaskCollection() async {
+CollectionReference getTaskCollection() {
   CollectionReference tasks = FirebaseFirestore.instance
       .collection('users')
       .doc("test-user")
@@ -168,10 +390,10 @@ Future<CollectionReference> getTaskCollection() async {
   return tasks;
 }
 
-Future<List<Task>> getTasks() async {
+Future<List<Task>> getOrderedTasks() async {
   print("RETREIVING TASKS FROM FIRESTORE");
-  CollectionReference tasks = await getTaskCollection();
-  QuerySnapshot taskSnapshot = await tasks.get();
+  CollectionReference tasks = getTaskCollection();
+  QuerySnapshot taskSnapshot = await tasks.orderBy('epochDue').get();
   return taskSnapshot.docs.map((e) => taskFromDoc(e)).toList();
 }
 
@@ -179,51 +401,82 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
   Map<String, dynamic> docDict = d.data();
   Task newTask = Task(docDict['name'], docDict['taskUID'], docDict['epochDue']);
   // Expand with check for the rest of the optional fields...
+
   if (docDict['description'] != null) {
     newTask.description = docDict['description'];
+  } else {
+    newTask.description = "";
   }
   if (docDict['location'] != null) {
     newTask.location = docDict['location'];
+  } else {
+    newTask.location = "";
   }
   if (docDict['taskCategory'] != null) {
     newTask.taskCategory = stringToCategory(docDict['taskCategory']);
+  } else {
+    newTask.taskCategory = Category.None;
   }
+  if (docDict['epochCompleted'] != null) {
+    newTask.epochCompleted = docDict['epochCompleted'];
+  } else {
+    newTask.epochCompleted = -1;
+  }
+  if (docDict['epochLastEdit'] != null) {
+    newTask.epochLastEdit = docDict['epochLastEdit'];
+  } else {
+    newTask.epochLastEdit = -1;
+  }
+  if (docDict['eventUID'] != null) {
+    newTask.eventUID = docDict['eventUID'];
+  } else {
+    newTask.eventUID = "";
+  }
+  if (docDict['epochStart'] != null) {
+    newTask.epochStart = docDict['epochStart'];
+  } else {
+    newTask.epochStart = -1;
+  }
+  if (docDict['workPeriods'] != null) {
+    // need to cast elements to Map<String,int> with map, since casting the list
+    // does not cast the elements correctly (elements to Map, but not right one)
+    newTask.workPeriods = List.from(docDict['workPeriods'])
+        .map((e) => Map<String, int>.from(e))
+        .toList();
+  } else {
+    newTask.workPeriods = [];
+  }
+
   print("ID:${d.id}");
   return newTask;
 }
 
-createTask(context, AsyncCallback refresh) async {
+void createTask(context) async {
   // create blank task and edit it
   Task newTask = Task.blankTask();
   newTask.epochDue = DateTime.now().millisecondsSinceEpoch;
-  await newTask.editTask(context, refresh);
-  await refresh();
+  await newTask.editTask(context);
 }
 
 Future<void> saveTask(Task task) async {
   //save task in Firestore (check if it already exists and update it, otherwise create new document)
-  CollectionReference tasks = await getTaskCollection();
-  if (await online()) {
-    FirebaseFirestore.instance.enableNetwork();
-    await tasks.doc(task.taskUID).set(task.toMap());
-  } else {
-    FirebaseFirestore.instance.disableNetwork();
-    tasks.doc(task.taskUID).set(task.toMap());
-  }
+  CollectionReference tasks = getTaskCollection();
+  //update fields
+  await tasks
+      .doc(task.taskUID)
+      .set(task.toMapNoArrays(), SetOptions(merge: true));
+  //array union of work-time tracked
+  await tasks
+      .doc(task.taskUID)
+      .update({'workPeriods': FieldValue.arrayUnion(task.workPeriods)});
   print("Task saved");
 }
 
 Future<void> deleteTask(Task task) async {
   //delete task from Firestore
-  CollectionReference tasks = await getTaskCollection();
+  CollectionReference tasks = getTaskCollection();
 
-  if (await online()) {
-    FirebaseFirestore.instance.enableNetwork();
-    await tasks.doc(task.taskUID).delete();
-  } else {
-    FirebaseFirestore.instance.disableNetwork();
-    tasks.doc(task.taskUID).delete();
-  }
+  await tasks.doc(task.taskUID).delete();
 }
 
 Future<void> duplicateTask(Task task) async {
@@ -254,6 +507,8 @@ class Task {
   int epochLastEdit;
   int epochCompleted;
   String eventUID;
+  int epochStart;
+  List<Map<String, int>> workPeriods = [];
 
   Task(this.name, this.taskUID, this.epochDue,
       {this.epochLastEdit = -1,
@@ -261,7 +516,9 @@ class Task {
       this.description = "",
       this.location = "",
       this.taskCategory = Category.None,
-      String eventUID = ""});
+      this.eventUID = "",
+      this.epochStart = -1,
+      workPeriods});
 
   Task clone() {
     return Task(name, taskUID, epochDue,
@@ -270,7 +527,9 @@ class Task {
         description: description,
         location: location,
         taskCategory: taskCategory,
-        eventUID: eventUID);
+        eventUID: eventUID,
+        epochStart: epochStart,
+        workPeriods: workPeriods);
   }
 
   // Duplicates a task but updates its TaskUID, creating a perfect copy, but different task
@@ -281,7 +540,9 @@ class Task {
         description: description,
         location: location,
         taskCategory: taskCategory,
-        eventUID: eventUID);
+        eventUID: eventUID,
+        epochStart: -1,
+        workPeriods: []);
   }
 
   static Task blankTask() {
@@ -301,7 +562,7 @@ class Task {
     return !(this == other);
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMapNoArrays() {
     return {
       "name": name,
       "taskUID": taskUID,
@@ -311,12 +572,12 @@ class Task {
       "description": description,
       "location": location,
       "taskCategory": categoryToString(taskCategory),
-      "eventUID": eventUID
+      "eventUID": eventUID,
+      "epochStart": epochStart,
     };
   }
 
-  Future<void> editTask(
-      BuildContext context, AsyncCallback refreshTaskList) async {
+  Future<void> editTask(BuildContext context) async {
     // determines if dialog pops up to confirm/discard/cancel changes when user taps away from modalsheet
     bool editting = true;
     // checks if the current changes have been saved with save button
@@ -386,7 +647,6 @@ class Task {
                           icon: Icon(Icons.save),
                           onPressed: () async {
                             await saveTask(newTask);
-                            await refreshTaskList();
                             saved = true;
                           }),
                       Row(children: [
@@ -402,7 +662,6 @@ class Task {
                                         child: Text("Confirm"),
                                         onPressed: () async {
                                           await duplicateTask(this);
-                                          await refreshTaskList();
                                           Navigator.of(context).pop();
                                         }),
                                     FlatButton(
@@ -439,7 +698,6 @@ class Task {
                             // if confirmed deletion, end editing and pop out of modal sheet
                             if (delete) {
                               await deleteTask(this);
-                              await refreshTaskList();
                               editting = false;
                               Navigator.of(context).pop();
                             }
@@ -456,9 +714,9 @@ class Task {
                   //Task Name
                   TextFormField(
                     initialValue: newTask.name,
-                    maxLength: 70,
+                    maxLength: 30,
                     minLines: 1,
-                    maxLines: 10,
+                    maxLines: 1,
                     scrollPadding: EdgeInsets.all(2),
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
@@ -523,9 +781,9 @@ class Task {
                   //Location
                   TextFormField(
                     initialValue: newTask.location,
-                    maxLength: 70,
+                    maxLength: 30,
                     minLines: 1,
-                    maxLines: 10,
+                    maxLines: 1,
                     scrollPadding: EdgeInsets.all(2),
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
@@ -591,7 +849,6 @@ class Task {
                     child: Text("Confirm"),
                     onPressed: () async {
                       await saveTask(newTask);
-                      await refreshTaskList();
                       editting = false;
                       Navigator.of(context).pop();
                     }),
