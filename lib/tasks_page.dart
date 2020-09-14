@@ -57,7 +57,13 @@ class _TasksPageState extends State<TasksPage> {
 
   Future<void> refreshTasks() async {
     print('REFRESHING TASK PAGE');
-    await loadTasks();
+    if (await online()) {
+      FirebaseFirestore.instance.enableNetwork();
+      await loadTasks();
+    } else {
+      FirebaseFirestore.instance.disableNetwork();
+      loadTasks();
+    }
   }
 
   @override

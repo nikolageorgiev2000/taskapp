@@ -92,7 +92,10 @@ class _TaskCardState extends State<TaskCard> {
   @override
   void deactivate() {
     print("DEACTIVATING");
-    endTask();
+    if (_taskTimer != null) {
+      _taskTimer.cancel();
+      _taskTimer = null;
+    }
     super.deactivate();
   }
 
@@ -168,18 +171,21 @@ class _TaskCardState extends State<TaskCard> {
                                         startTask();
                                         _flatButtonPressed = false;
                                       },
-                                      label: Text("1:25"),
+                                      label: Text(
+                                          "${calcTimeSpent(widget.task.workPeriods).toString()}s"),
                                     ),
                                   if (widget.task.epochStart >= 0)
                                     FlatButton.icon(
-                                      icon: Icon(Icons.play_arrow,
+                                      icon: Icon(Icons.pause,
                                           color: Colors.blueGrey),
                                       onPressed: () {
                                         print("Timer Ended");
                                         endTask();
                                         _flatButtonPressed = false;
                                       },
-                                      label: Text(_trackedTime.toString()),
+                                      label: Text((_trackedTime == null)
+                                          ? "Loading"
+                                          : _trackedTime.toString()),
                                     ),
                                 ],
                               ),
@@ -378,6 +384,35 @@ String formatTime(TimeOfDay time) {
   return "${time.hour}:${time.minute}";
 }
 
+//calculate time in SECONDS spent working on a task
+int calcTimeSpent(List<Map<String, int>> tP) {
+  if (tP.isEmpty) {
+    return 0;
+  }
+
+  tP.sort((x, y) => (x['start'] < y['start'] ||
+          (x['start'] == y['start'] && x['end'] < y['end'])
+      ? -1
+      : 1));
+  tP = tP.where((x) => (x['start'] > 0 && x['end'] > x['start'])).toList();
+
+  int totalTime = 0;
+  int s = tP[0]['start'];
+  int e = tP[0]['end'];
+  for (var i = 1; i < tP.length; i++) {
+    if (tP[i]['start'] > e) {
+      print(totalTime);
+      totalTime += e - s;
+      s = tP[i]['start'];
+      e = tP[i]['end'];
+    } else {
+      e = tP[i]['end'];
+    }
+  }
+  totalTime += e - s;
+  return totalTime ~/ 1000;
+}
+
 int timeToMilliseconds(TimeOfDay timeOfDay) {
   return 1000 * (3600 * timeOfDay.hour + 60 * timeOfDay.minute);
 }
@@ -461,7 +496,7 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
     newTask.workPeriods = [];
   }
 
-  print("ID:${d.id}");
+  // print("ID:${d.id}");
   return newTask;
 }
 
@@ -475,14 +510,23 @@ void createTask(context) async {
 Future<void> saveTask(Task task) async {
   //save task in Firestore (check if it already exists and update it, otherwise create new document)
   CollectionReference tasks = getTaskCollection();
-  //update fields
-  await tasks
-      .doc(task.taskUID)
-      .set(task.toMapNoArrays(), SetOptions(merge: true));
-  //array union of work-time tracked
-  await tasks
-      .doc(task.taskUID)
-      .update({'workPeriods': FieldValue.arrayUnion(task.workPeriods)});
+
+  if (await online()) {
+    //update fields
+    await tasks
+        .doc(task.taskUID)
+        .set(task.toMapNoArrays(), SetOptions(merge: true));
+    //array union of work-time tracked
+    await tasks
+        .doc(task.taskUID)
+        .update({'workPeriods': FieldValue.arrayUnion(task.workPeriods)});
+  } else {
+    tasks.doc(task.taskUID).set(task.toMapNoArrays(), SetOptions(merge: true));
+    //array union of work-time tracked
+    tasks
+        .doc(task.taskUID)
+        .update({'workPeriods': FieldValue.arrayUnion(task.workPeriods)});
+  }
   print("Task saved");
 }
 
