@@ -23,19 +23,18 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  bool flatButtonPressed = false;
-  Timer taskTimer;
-  int trackedTime;
+  bool _flatButtonPressed = false;
+  Timer _taskTimer;
+  int _trackedTime;
 
   void startTask() async {
     widget.task.epochStart = DateTime.now().millisecondsSinceEpoch;
     setState(() {
       // reset tracking state (artefacts from last tracked time otherwise!)
-      trackedTime = 0;
-      taskTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-        setTrackedTime();
-      });
+      _trackedTime = 0;
+      _taskTimer = null;
     });
+    // save and rebuild widget
     await saveTask(widget.task);
   }
 
@@ -45,17 +44,20 @@ class _TaskCardState extends State<TaskCard> {
       'end': DateTime.now().millisecondsSinceEpoch
     });
     widget.task.epochStart = -1;
+
+    _trackedTime = 0;
+    _taskTimer.cancel();
+    print("Tasktimer of ${widget.task.name} is active? ${_taskTimer.isActive}");
+    _taskTimer = null;
+
+    //widget will rebuild after this
     await saveTask(widget.task);
-    setState(() {
-      trackedTime = 0;
-      taskTimer.cancel();
-    });
   }
 
   void setTrackedTime() {
     print("Setting time");
     this.setState(() {
-      trackedTime =
+      _trackedTime =
           (DateTime.now().millisecondsSinceEpoch - widget.task.epochStart) ~/
               1000;
     });
@@ -65,24 +67,32 @@ class _TaskCardState extends State<TaskCard> {
     }
   }
 
+  void checkRunningTimer() {
+    if (widget.task.epochStart >= 0) {
+      if (_taskTimer == null) {
+        _taskTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+          setTrackedTime();
+        });
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(TaskCard oldWidget) {
+    checkRunningTimer();
+    super.didUpdateWidget(oldWidget);
+  }
+
   @override
   void initState() {
-    trackedTime = 0;
-    if (widget.task.epochStart >= 0) {
-      trackedTime = 0;
-      taskTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-        setTrackedTime();
-      });
-    }
+    checkRunningTimer();
     super.initState();
   }
 
   @override
   void deactivate() {
-    setState(() {
-      trackedTime = 0;
-      taskTimer.cancel();
-    });
+    print("DEACTIVATING");
+    endTask();
     super.deactivate();
   }
 
@@ -90,7 +100,7 @@ class _TaskCardState extends State<TaskCard> {
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(15));
   @override
   Widget build(BuildContext context) {
-    print("BUILDING TASKCARD: location: ${widget.task.location}");
+    print("BUILDING TASKCARD: ${widget.task.name}");
     if (widget.task.epochCompleted < 0) {
       return Card(
         shape: cardBorder,
@@ -98,7 +108,7 @@ class _TaskCardState extends State<TaskCard> {
             customBorder: cardBorder,
             splashColor: Colors.blue.withAlpha(30),
             onLongPress: () async {
-              if (!flatButtonPressed) {
+              if (!_flatButtonPressed) {
                 //delete when Firestore functions implemented
                 widget.task.editTask(context);
               }
@@ -156,7 +166,7 @@ class _TaskCardState extends State<TaskCard> {
                                       onPressed: () async {
                                         print("Time Started");
                                         startTask();
-                                        flatButtonPressed = false;
+                                        _flatButtonPressed = false;
                                       },
                                       label: Text("1:25"),
                                     ),
@@ -167,9 +177,9 @@ class _TaskCardState extends State<TaskCard> {
                                       onPressed: () {
                                         print("Timer Ended");
                                         endTask();
-                                        flatButtonPressed = false;
+                                        _flatButtonPressed = false;
                                       },
-                                      label: Text(trackedTime.toString()),
+                                      label: Text(_trackedTime.toString()),
                                     ),
                                 ],
                               ),
@@ -194,7 +204,11 @@ class _TaskCardState extends State<TaskCard> {
                                                         .epochCompleted = DateTime
                                                             .now()
                                                         .millisecondsSinceEpoch;
-                                                    endTask();
+                                                    if (widget
+                                                            .task.epochStart >=
+                                                        0) {
+                                                      endTask();
+                                                    }
                                                     await saveTask(widget.task);
                                                     Navigator.of(context).pop();
                                                   }),
@@ -205,7 +219,7 @@ class _TaskCardState extends State<TaskCard> {
                                                   })
                                             ],
                                           ));
-                                      flatButtonPressed = false;
+                                      _flatButtonPressed = false;
                                     },
                                   )
                                 ],
@@ -214,21 +228,21 @@ class _TaskCardState extends State<TaskCard> {
                           ),
                           // Detect when column is pressed and released to avoid unwanted interaction with inksplash
                           onTapDown: (details) {
-                            flatButtonPressed = true;
+                            _flatButtonPressed = true;
                             print("DOWN");
                           },
                           onTapUp: (details) {
-                            flatButtonPressed = false;
+                            _flatButtonPressed = false;
                           },
                           onTapCancel: () {
-                            flatButtonPressed = false;
+                            _flatButtonPressed = false;
                           },
                           onLongPressStart: (details) {
-                            flatButtonPressed = true;
+                            _flatButtonPressed = true;
                             print("START");
                           },
                           onLongPressEnd: (details) {
-                            flatButtonPressed = false;
+                            _flatButtonPressed = false;
                             print("END");
                           }))
                 ],
@@ -286,7 +300,7 @@ class _TaskCardState extends State<TaskCard> {
                               FlatButton(
                                 onPressed: () {
                                   print("Track - Pressed");
-                                  flatButtonPressed = false;
+                                  _flatButtonPressed = false;
                                 },
                                 child: Text("1:25"),
                               )
@@ -320,7 +334,7 @@ class _TaskCardState extends State<TaskCard> {
                                               })
                                         ],
                                       ));
-                                  flatButtonPressed = false;
+                                  _flatButtonPressed = false;
                                 },
                               )
                             ],
@@ -329,21 +343,21 @@ class _TaskCardState extends State<TaskCard> {
                       ),
                       // Detect when column is pressed and released to avoid unwanted interaction with inksplash
                       onTapDown: (details) {
-                        flatButtonPressed = true;
+                        _flatButtonPressed = true;
                         print("DOWN");
                       },
                       onTapUp: (details) {
-                        flatButtonPressed = false;
+                        _flatButtonPressed = false;
                       },
                       onTapCancel: () {
-                        flatButtonPressed = false;
+                        _flatButtonPressed = false;
                       },
                       onLongPressStart: (details) {
-                        flatButtonPressed = true;
+                        _flatButtonPressed = true;
                         print("START");
                       },
                       onLongPressEnd: (details) {
-                        flatButtonPressed = false;
+                        _flatButtonPressed = false;
                         print("END");
                       }))
             ],

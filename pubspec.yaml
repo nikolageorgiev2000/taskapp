@@ -24,6 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
     
+  true_time: ^0.1.0
   crypto: ^2.1.5
   connectivity: '0.4.8+2'
   english_words: ^3.1.5
