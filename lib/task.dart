@@ -13,6 +13,7 @@ import 'package:crypto/crypto.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
@@ -104,8 +105,14 @@ class _TaskCardState extends State<TaskCard> {
   @override
   Widget build(BuildContext context) {
     print("BUILDING TASKCARD: ${widget.task.name}");
+
+    // Different card depending on whether task is completed or not
     if (widget.task.epochCompleted < 0) {
+      //TASK IN PROGRESS
       return Card(
+        color: (widget.task.epochDue < DateTime.now().millisecondsSinceEpoch)
+            ? Colors.redAccent.shade100
+            : Colors.white,
         shape: cardBorder,
         child: InkWell(
             customBorder: cardBorder,
@@ -129,26 +136,30 @@ class _TaskCardState extends State<TaskCard> {
                               border: Border(
                                   right: BorderSide(color: Colors.grey))),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(children: [
-                                Text("name: " + widget.task.name)
+                                Text((widget.task.name != "")
+                                    ? widget.task.name
+                                    : "No Name")
                               ]),
                               Divider(
                                 color: Colors.transparent,
                                 height: 5,
                               ),
                               Row(children: [
-                                Text("epochDue: " +
-                                    widget.task.epochDue.toString())
+                                Text((widget.task.epochDue == -1)
+                                    ? "No due date"
+                                    : "Due ${formatTimeOfDay(context, TimeOfDay.fromDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task.epochDue)))} on ${formatDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task.epochDue))}")
                               ]),
                               Divider(
                                 color: Colors.transparent,
                                 height: 5,
                               ),
                               Row(children: [
-                                Text("uid: " +
-                                    widget.task.taskUID.substring(
-                                        0, min(widget.task.taskUID.length, 10)))
+                                Text((widget.task.location != "")
+                                    ? "At ${widget.task.location}"
+                                    : "")
                               ]),
                             ],
                             mainAxisSize: MainAxisSize.max,
@@ -159,6 +170,7 @@ class _TaskCardState extends State<TaskCard> {
                       alignment: Alignment.topRight,
                       child: GestureDetector(
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
@@ -172,7 +184,7 @@ class _TaskCardState extends State<TaskCard> {
                                         _flatButtonPressed = false;
                                       },
                                       label: Text(
-                                          "${calcTimeSpent(widget.task.workPeriods).toString()}s"),
+                                          "${formatTrackedTime(calcTimeSpent(widget.task.workPeriods))}"),
                                     ),
                                   if (widget.task.epochStart >= 0)
                                     FlatButton.icon(
@@ -185,7 +197,7 @@ class _TaskCardState extends State<TaskCard> {
                                       },
                                       label: Text((_trackedTime == null)
                                           ? "Loading"
-                                          : _trackedTime.toString()),
+                                          : formatTrackedTime(_trackedTime)),
                                     ),
                                 ],
                               ),
@@ -258,117 +270,138 @@ class _TaskCardState extends State<TaskCard> {
         margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       );
     } else {
+      //TASK COMPLETED
       return Card(
         shape: cardBorder,
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // LEFT COLUMN
-              Expanded(
-                  child: Container(
-                      alignment: Alignment.topLeft,
-                      decoration: BoxDecoration(
-                          border:
-                              Border(right: BorderSide(color: Colors.grey))),
-                      child: Column(
-                        children: [
-                          Row(children: [Text("name: " + widget.task.name)]),
-                          Divider(
-                            color: Colors.transparent,
-                            height: 5,
-                          ),
-                          Row(children: [
-                            Text("epochDue: " + widget.task.epochDue.toString())
-                          ]),
-                          Divider(
-                            color: Colors.transparent,
-                            height: 5,
-                          ),
-                          Row(children: [
-                            Text("uid: " +
-                                widget.task.taskUID.substring(
-                                    0, min(widget.task.taskUID.length, 10)))
-                          ]),
-                        ],
-                        mainAxisSize: MainAxisSize.max,
-                      ))),
-              VerticalDivider(color: Colors.grey),
-              // RIGHT COLUMN
-              Align(
-                  alignment: Alignment.topRight,
-                  child: GestureDetector(
-                      child: Column(
-                        children: [
-                          Row(
+        child: InkWell(
+            customBorder: cardBorder,
+            splashColor: Colors.blue.withAlpha(30),
+            onLongPress: () async {
+              if (!_flatButtonPressed) {
+                //delete when Firestore functions implemented
+                widget.task.editTask(context);
+              }
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // LEFT COLUMN
+                  Expanded(
+                      child: Container(
+                          alignment: Alignment.topLeft,
+                          decoration: BoxDecoration(
+                              border: Border(
+                                  right: BorderSide(color: Colors.grey))),
+                          child: Column(
                             children: [
-                              FlatButton(
-                                onPressed: () {
-                                  print("Track - Pressed");
-                                  _flatButtonPressed = false;
-                                },
-                                child: Text("1:25"),
+                              Row(children: [
+                                Text((widget.task.name != "")
+                                    ? widget.task.name
+                                    : "No Name")
+                              ]),
+                              Divider(
+                                color: Colors.transparent,
+                                height: 5,
+                              ),
+                              Row(children: [
+                                Text((widget.task.epochDue == -1)
+                                    ? "No due date"
+                                    : "Due ${formatTimeOfDay(context, TimeOfDay.fromDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task.epochDue)))} on ${formatDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task.epochDue))}")
+                              ]),
+                              Divider(
+                                color: Colors.transparent,
+                                height: 5,
+                              ),
+                              Row(children: [
+                                Text((widget.task.location != "")
+                                    ? "At ${widget.task.location}"
+                                    : "")
+                              ]),
+                            ],
+                            mainAxisSize: MainAxisSize.max,
+                          ))),
+                  VerticalDivider(color: Colors.grey),
+                  // RIGHT COLUMN
+                  Align(
+                      alignment: Alignment.topRight,
+                      child: GestureDetector(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  FlatButton.icon(
+                                    onPressed: () {
+                                      print("Track - Pressed");
+                                      _flatButtonPressed = false;
+                                    },
+                                    icon: Icon(Icons.timer,
+                                        color: Colors.blueGrey),
+                                    label: Text(
+                                        "${formatTrackedTime(calcTimeSpent(widget.task.workPeriods))}"),
+                                  )
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  FlatButton.icon(
+                                    icon: Icon(Icons.check_circle_outline,
+                                        color: Colors.green),
+                                    label: Text("Completed"),
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () async {
+                                      await showDialog(
+                                          context: context,
+                                          child: AlertDialog(
+                                            content: Text(
+                                                "Mark task as incomplete?"),
+                                            actions: [
+                                              FlatButton(
+                                                  child: Text("Confirm"),
+                                                  onPressed: () async {
+                                                    widget.task.epochCompleted =
+                                                        -1;
+                                                    await saveTask(widget.task);
+                                                    Navigator.of(context).pop();
+                                                  }),
+                                              FlatButton(
+                                                  child: Text("Cancel"),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  })
+                                            ],
+                                          ));
+                                      _flatButtonPressed = false;
+                                    },
+                                  )
+                                ],
                               )
                             ],
                           ),
-                          Row(
-                            children: [
-                              FlatButton.icon(
-                                icon: Icon(Icons.check_circle_outline,
-                                    color: Colors.green),
-                                label: Text("Completed"),
-                                padding: EdgeInsets.zero,
-                                onPressed: () async {
-                                  await showDialog(
-                                      context: context,
-                                      child: AlertDialog(
-                                        content:
-                                            Text("Mark task as incomplete?"),
-                                        actions: [
-                                          FlatButton(
-                                              child: Text("Confirm"),
-                                              onPressed: () async {
-                                                widget.task.epochCompleted = -1;
-                                                await saveTask(widget.task);
-                                                Navigator.of(context).pop();
-                                              }),
-                                          FlatButton(
-                                              child: Text("Cancel"),
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              })
-                                        ],
-                                      ));
-                                  _flatButtonPressed = false;
-                                },
-                              )
-                            ],
-                          )
-                        ],
-                      ),
-                      // Detect when column is pressed and released to avoid unwanted interaction with inksplash
-                      onTapDown: (details) {
-                        _flatButtonPressed = true;
-                        print("DOWN");
-                      },
-                      onTapUp: (details) {
-                        _flatButtonPressed = false;
-                      },
-                      onTapCancel: () {
-                        _flatButtonPressed = false;
-                      },
-                      onLongPressStart: (details) {
-                        _flatButtonPressed = true;
-                        print("START");
-                      },
-                      onLongPressEnd: (details) {
-                        _flatButtonPressed = false;
-                        print("END");
-                      }))
-            ],
-          ),
-        ),
+                          // Detect when column is pressed and released to avoid unwanted interaction with inksplash
+                          onTapDown: (details) {
+                            _flatButtonPressed = true;
+                            print("DOWN");
+                          },
+                          onTapUp: (details) {
+                            _flatButtonPressed = false;
+                          },
+                          onTapCancel: () {
+                            _flatButtonPressed = false;
+                          },
+                          onLongPressStart: (details) {
+                            _flatButtonPressed = true;
+                            print("START");
+                          },
+                          onLongPressEnd: (details) {
+                            _flatButtonPressed = false;
+                            print("END");
+                          }))
+                ],
+              ),
+            )),
         elevation: 3,
         margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       );
@@ -376,25 +409,31 @@ class _TaskCardState extends State<TaskCard> {
   }
 }
 
-String formatDate(DateTime dateTime) {
-  return "${dateTime.day.toString()}-${dateTime.month.toString()}-${dateTime.year.toString()}";
+String formatDateTime(DateTime dateTime) {
+  return DateFormat.yMMMd().format(dateTime);
+  // return "${dateTime.day.toString()}-${dateTime.month.toString()}-${dateTime.year.toString()}";
 }
 
-String formatTime(TimeOfDay time) {
-  return "${time.hour}:${time.minute}";
+String formatTimeOfDay(BuildContext context, TimeOfDay time) {
+  return time.format(context);
+}
+
+// converts seconds to hh:mm:ss format
+String formatTrackedTime(int sec) {
+  return "${(sec ~/ 3600).toString().padLeft(2, '0')}:${((sec % 3600) ~/ 60).toString().padLeft(2, '0')}:${(sec % 60).toString().padLeft(2, '0')}";
 }
 
 //calculate time in SECONDS spent working on a task
 int calcTimeSpent(List<Map<String, int>> tP) {
-  if (tP.isEmpty) {
-    return 0;
-  }
-
   tP.sort((x, y) => (x['start'] < y['start'] ||
           (x['start'] == y['start'] && x['end'] < y['end'])
       ? -1
       : 1));
   tP = tP.where((x) => (x['start'] > 0 && x['end'] > x['start'])).toList();
+
+  if (tP.isEmpty) {
+    return 0;
+  }
 
   int totalTime = 0;
   int s = tP[0]['start'];
@@ -441,9 +480,35 @@ CollectionReference getTaskCollection() {
 
 Future<List<Task>> getOrderedTasks() async {
   print("RETREIVING TASKS FROM FIRESTORE");
-  CollectionReference tasks = getTaskCollection();
-  QuerySnapshot taskSnapshot = await tasks.orderBy('epochDue').get();
-  return taskSnapshot.docs.map((e) => taskFromDoc(e)).toList();
+  CollectionReference taskColl = getTaskCollection();
+  QuerySnapshot taskSnapshot = await taskColl.orderBy('epochDue').get();
+  List<Task> tasks = taskSnapshot.docs.map((e) => taskFromDoc(e)).toList();
+  tasks.sort((x, y) => taskOrder(x, y));
+  return tasks;
+}
+
+int taskOrder(Task x, Task y) {
+  bool taskFinished(Task t) {
+    return t.epochCompleted >= 0;
+  }
+
+  if (!taskFinished(x)) {
+    if (x.epochCompleted < y.epochCompleted) {
+      // x unfinished, y finished
+      return -1;
+    } else {
+      // both unfinished, show task due sooner first
+      return (x.epochDue < y.epochDue) ? -1 : 1;
+    }
+  } else {
+    if (!taskFinished(y)) {
+      // x finished, y unfinished
+      return 1;
+    } else {
+      // both finished, show task finished recently first
+      return (x.epochCompleted < y.epochCompleted) ? 1 : -1;
+    }
+  }
 }
 
 Task taskFromDoc(QueryDocumentSnapshot d) {
@@ -503,7 +568,6 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
 void createTask(context) async {
   // create blank task and edit it
   Task newTask = Task.blankTask();
-  newTask.epochDue = DateTime.now().millisecondsSinceEpoch;
   await newTask.editTask(context);
 }
 
@@ -604,7 +668,11 @@ class Task {
   }
 
   static Task blankTask() {
-    return Task("", createTaskUID(), DateTime.now().millisecondsSinceEpoch);
+    return Task(
+        "",
+        createTaskUID(),
+        DateTime.now().millisecondsSinceEpoch +
+            1000 * 60 * TimeOfDay.minutesPerHour * TimeOfDay.hoursPerDay);
   }
 
   //A Tasks's uniqueness comes from it's UID
@@ -775,9 +843,9 @@ class Task {
                     maxLength: 30,
                     minLines: 1,
                     maxLines: 1,
-                    scrollPadding: EdgeInsets.all(2),
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
+                      contentPadding: EdgeInsets.all(20),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(1),
                           gapPadding: 1),
@@ -800,9 +868,9 @@ class Task {
                     maxLength: 280,
                     minLines: 1,
                     maxLines: 10,
-                    scrollPadding: EdgeInsets.all(2),
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
+                      contentPadding: EdgeInsets.all(20),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(1),
                           gapPadding: 1),
@@ -825,7 +893,7 @@ class Task {
                         onPressed: () async {
                           await _showDatePicker();
                         },
-                        child: Text(formatDate(
+                        child: Text(formatDateTime(
                             DateTime.fromMillisecondsSinceEpoch(
                                 newTask.epochDue)))),
                     //Time Due
@@ -833,7 +901,7 @@ class Task {
                         onPressed: () async {
                           await _showTimePicker();
                         },
-                        child: Text(formatTime(initTime))),
+                        child: Text(formatTimeOfDay(context, initTime))),
                   ]),
 
                   //Location
@@ -842,9 +910,9 @@ class Task {
                     maxLength: 30,
                     minLines: 1,
                     maxLines: 1,
-                    scrollPadding: EdgeInsets.all(2),
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
+                      contentPadding: EdgeInsets.all(20),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(1),
                           gapPadding: 1),
@@ -928,6 +996,152 @@ class Task {
       }
     }
   }
+
+  // Future<void> viewTaskDetails(BuildContext context) async {
+  //   // wait for editing to be finished on modal sheet
+  //   await showModalBottomSheet<void>(
+  //       isScrollControlled: true,
+  //       context: context,
+  //       enableDrag: false,
+  //       builder: (BuildContext context) {
+  //         return StatefulBuilder(
+  //             builder: (BuildContext context, StateSetter setModalState) {
+  //           // initialize initial date and time task is due
+  //           DateTime initDate =
+  //               DateTime.fromMillisecondsSinceEpoch(this.epochDue);
+  //           print(this.taskUID);
+  //           print(this.location);
+  //           print(initDate.toString());
+  //           TimeOfDay initTime = TimeOfDay.fromDateTime(initDate);
+  //           Category initCategory = this.taskCategory;
+
+  //           // Editable UI
+  //           return Column(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: <Widget>[
+  //               Padding(
+  //                 padding: EdgeInsets.all(5),
+  //               ),
+
+  //               //Task Name
+  //               TextFormField(
+  //                 initialValue: this.name,
+  //                 maxLength: 30,
+  //                 minLines: 1,
+  //                 maxLines: 1,
+  //                 textCapitalization: TextCapitalization.sentences,
+  //                 decoration: InputDecoration(
+  //                   contentPadding: EdgeInsets.all(20),
+  //                   enabled: false,
+  //                   focusedBorder: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
+  //                   enabledBorder: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
+  //                   labelText: 'Task Name',
+  //                   labelStyle: TextStyle(color: Colors.blueGrey),
+  //                   counterText: null,
+  //                 ),
+  //                 textInputAction: TextInputAction.done,
+  //                 onChanged: (inputString) {
+  //                   this.name = inputString;
+  //                 },
+  //               ),
+
+  //               //Description
+  //               TextFormField(
+  //                 initialValue: this.description,
+  //                 maxLength: 280,
+  //                 minLines: 1,
+  //                 maxLines: 10,
+  //                 textCapitalization: TextCapitalization.sentences,
+  //                 decoration: InputDecoration(
+  //                   contentPadding: EdgeInsets.all(20),
+  //                   enabled: false,
+  //                   focusedBorder: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
+  //                   enabledBorder: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
+  //                   labelText: 'Description',
+  //                   labelStyle: TextStyle(color: Colors.blueGrey),
+  //                   counterText: null,
+  //                 ),
+  //                 textInputAction: TextInputAction.done,
+  //                 onChanged: (inputString) {
+  //                   this.description = inputString;
+  //                 },
+  //               ),
+
+  //               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+  //                 //Date Due
+  //                 FlatButton(
+  //                     onPressed: () async {},
+  //                     child: Text(formatDate(
+  //                         DateTime.fromMillisecondsSinceEpoch(this.epochDue)))),
+  //                 //Time Due
+  //                 FlatButton(
+  //                     onPressed: () async {},
+  //                     child: Text(formatTime(context, initTime))),
+  //               ]),
+
+  //               //Location
+  //               TextFormField(
+  //                 initialValue: this.location,
+  //                 maxLength: 30,
+  //                 minLines: 1,
+  //                 maxLines: 1,
+  //                 textCapitalization: TextCapitalization.sentences,
+  //                 decoration: InputDecoration(
+  //                   contentPadding: EdgeInsets.all(20),
+  //                   enabled: false,
+  //                   focusedBorder: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
+  //                   enabledBorder: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
+  //                   labelText: 'Location',
+  //                   labelStyle: TextStyle(color: Colors.blueGrey),
+  //                   counterText: null,
+  //                 ),
+  //                 textInputAction: TextInputAction.done,
+  //                 onChanged: (inputString) {
+  //                   this.location = inputString;
+  //                 },
+  //               ),
+
+  //               //Category selection
+  //               DropdownButton<Category>(
+  //                   value: initCategory,
+  //                   items: List.generate(
+  //                       Category.values.length,
+  //                       (i) => DropdownMenuItem(
+  //                             value: Category.values[i],
+  //                             child: Text(categoryToString(Category.values[i])),
+  //                           )),
+  //                   onChanged: (val) {
+  //                     setModalState(() {
+  //                       this.taskCategory = val;
+  //                     });
+  //                   }),
+
+  //               Padding(
+  //                 padding: EdgeInsets.all(5),
+  //               ),
+
+  //               //Padding to move modal sheet up with keyboard
+  //               AnimatedPadding(
+  //                 padding: MediaQuery.of(context).viewInsets,
+  //                 duration: const Duration(milliseconds: 100),
+  //                 curve: Curves.decelerate,
+  //                 child: new Container(
+  //                   alignment: Alignment.bottomCenter,
+  //                   child: Container(),
+  //                 ),
+  //               ),
+  //             ],
+  //           );
+  //         });
+  //       });
+  // }
 
   @override
   bool operator ==(Object other) =>

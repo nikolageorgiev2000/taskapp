@@ -89,8 +89,6 @@ class _MenuControllerState extends State<MenuController> {
     pages = [
       // TaskList
       TasksPage(widget.key),
-      Text("Events"),
-      Text("Stats"),
       Text("Settings")
     ];
     floatingButtons = [
@@ -103,8 +101,6 @@ class _MenuControllerState extends State<MenuController> {
         },
       ),
       null,
-      null,
-      null
     ];
 
     super.initState();
@@ -135,10 +131,6 @@ class _MenuControllerState extends State<MenuController> {
         items: [
           BottomNavigationBarItem(
               icon: Icon(Icons.alarm_on), title: Text("Tasks")),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.today), title: Text("Events")),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.show_chart), title: Text("Stats")),
           BottomNavigationBarItem(
               icon: Icon(Icons.settings), title: Text("Options")),
         ],
