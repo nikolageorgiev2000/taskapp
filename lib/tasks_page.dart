@@ -68,7 +68,7 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_tasksLoaded) {
+    if (_tasksLoaded && _tasks.isNotEmpty) {
       return Scaffold(
           body: RefreshIndicator(
         child: TaskList(
@@ -76,7 +76,10 @@ class _TasksPageState extends State<TasksPage> {
         onRefresh: refreshTasks,
       ));
     } else {
-      return Scaffold();
+      return Scaffold(
+          body: Center(
+        child: Text("No Tasks... Add One"),
+      ));
     }
   }
 }

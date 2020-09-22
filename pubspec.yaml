@@ -24,6 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
     
+  google_sign_in: "^4.5.1"
   true_time: ^0.1.0
   crypto: ^2.1.5
   connectivity: '0.4.8+2'

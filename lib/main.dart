@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'settings_page.dart';
+import 'BaseAuth.dart';
 import 'task.dart';
 import 'tasks_page.dart';
 
@@ -26,7 +29,7 @@ class _MyAppState extends State<MyApp> {
   bool _error = false;
 
   // Define an async function to initialize FlutterFire
-  void initializeFlutterFire() async {
+  Future<void> initFirebase() async {
     try {
       // Wait for Firebase to initialize and set `_initialized` state to true
       await Firebase.initializeApp();
@@ -43,7 +46,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    initializeFlutterFire();
+    initFirebase();
     super.initState();
   }
 
@@ -83,13 +86,32 @@ class _MenuControllerState extends State<MenuController> {
   final _bucket = PageStorageBucket();
   List<Widget> pages;
   List<Widget> floatingButtons;
+  StreamSubscription<User> _auth;
+  bool _loggedIn = false;
+
+  void initAuthListener() {
+    _auth = FirebaseAuth.instance.authStateChanges().listen((User user) {
+      if (user == null) {
+        print('User is currently signed out!');
+        setState(() {
+          _loggedIn = false;
+        });
+      } else {
+        print('User is signed in!');
+        setState(() {
+          _loggedIn = true;
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
+    initAuthListener();
     pages = [
       // TaskList
       TasksPage(widget.key),
-      Text("Settings")
+      SettingsPage()
     ];
     floatingButtons = [
       FloatingActionButton(
@@ -114,33 +136,37 @@ class _MenuControllerState extends State<MenuController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //     centerTitle: true,
-      //     title: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      //       Align(alignment: Alignment.center, child: Text("hi")),
-      //       Align(alignment: Alignment.centerRight, child: Icon(Icons.settings))
-      //     ])),
-      body: SafeArea(
-          //Use PageStorage to save the scroll offset using the ScrollController in TaskList
-          child: PageStorage(bucket: _bucket, child: pages[_selectedIndex])),
-      floatingActionButton: floatingButtons[_selectedIndex],
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.alarm_on), title: Text("Tasks")),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings), title: Text("Options")),
-        ],
-        iconSize: 30,
-        currentIndex: _selectedIndex,
-        showUnselectedLabels: false,
-        selectedItemColor: Colors.lightBlue,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-      ),
-    );
+    if (_loggedIn) {
+      return Scaffold(
+        // appBar: AppBar(
+        //     centerTitle: true,
+        //     title: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        //       Align(alignment: Alignment.center, child: Text("hi")),
+        //       Align(alignment: Alignment.centerRight, child: Icon(Icons.settings))
+        //     ])),
+        body: SafeArea(
+            //Use PageStorage to save the scroll offset using the ScrollController in TaskList
+            child: PageStorage(bucket: _bucket, child: pages[_selectedIndex])),
+        floatingActionButton: floatingButtons[_selectedIndex],
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          items: [
+            BottomNavigationBarItem(
+                icon: Icon(Icons.alarm_on), title: Text("Tasks")),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.settings), title: Text("Options")),
+          ],
+          iconSize: 30,
+          currentIndex: _selectedIndex,
+          showUnselectedLabels: false,
+          selectedItemColor: Colors.lightBlue,
+          unselectedItemColor: Colors.grey,
+          onTap: _onItemTapped,
+        ),
+      );
+    } else {
+      return loginPage();
+    }
   }
 }

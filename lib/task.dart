@@ -14,6 +14,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:taskapp/BaseAuth.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
@@ -100,8 +101,9 @@ class _TaskCardState extends State<TaskCard> {
     super.deactivate();
   }
 
-  var cardBorder =
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(15));
+  var cardBorder = RoundedRectangleBorder(
+      side: BorderSide(color: Colors.black),
+      borderRadius: BorderRadius.circular(10));
   @override
   Widget build(BuildContext context) {
     print("BUILDING TASKCARD: ${widget.task.name}");
@@ -124,7 +126,7 @@ class _TaskCardState extends State<TaskCard> {
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -195,7 +197,8 @@ class _TaskCardState extends State<TaskCard> {
                                         endTask();
                                         _flatButtonPressed = false;
                                       },
-                                      label: Text((_trackedTime == null)
+                                      label: Text((_trackedTime == null ||
+                                              _trackedTime <= 0)
                                           ? "Loading"
                                           : formatTrackedTime(_trackedTime)),
                                     ),
@@ -267,7 +270,7 @@ class _TaskCardState extends State<TaskCard> {
               ),
             )),
         elevation: 3,
-        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       );
     } else {
       //TASK COMPLETED
@@ -283,7 +286,7 @@ class _TaskCardState extends State<TaskCard> {
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -403,7 +406,7 @@ class _TaskCardState extends State<TaskCard> {
               ),
             )),
         elevation: 3,
-        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       );
     }
   }
@@ -473,10 +476,18 @@ Future<bool> taskExists(String taskUID) async {
 CollectionReference getTaskCollection() {
   CollectionReference tasks = FirebaseFirestore.instance
       .collection('users')
-      .doc("test-user")
+      .doc(FirebaseAuth.instance.currentUser.uid.toString())
       .collection("tasks");
   return tasks;
 }
+
+// CollectionReference getTaskCollectionTest() {
+//   CollectionReference tasks = FirebaseFirestore.instance
+//       .collection('users')
+//       .doc("test-user")
+//       .collection("tasks");
+//   return tasks;
+// }
 
 Future<List<Task>> getOrderedTasks() async {
   print("RETREIVING TASKS FROM FIRESTORE");
