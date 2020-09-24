@@ -113,7 +113,7 @@ class _TaskCardState extends State<TaskCard> {
       //TASK IN PROGRESS
       return Card(
         color: (widget.task.epochDue < DateTime.now().millisecondsSinceEpoch)
-            ? Colors.redAccent.shade100
+            ? Color.fromARGB(255, 255, 153, 148)
             : Colors.white,
         shape: cardBorder,
         child: InkWell(
@@ -276,6 +276,7 @@ class _TaskCardState extends State<TaskCard> {
       //TASK COMPLETED
       return Card(
         shape: cardBorder,
+        color: Color.fromARGB(255, 160, 231, 160),
         child: InkWell(
             customBorder: cardBorder,
             splashColor: Colors.blue.withAlpha(30),

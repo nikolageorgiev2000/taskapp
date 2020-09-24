@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 
 UserCredential userCredential;
 
@@ -22,17 +23,15 @@ Future<UserCredential> signInWithGoogle() async {
 }
 
 SafeArea loginPage() {
-  return SafeArea(
-      child: Scaffold(
-    body: FlatButton.icon(
-        onPressed: () async {
-          await signInWithGoogle();
-        },
-        icon: Icon(Icons.login),
-        label: Text("Sign In")),
-  ));
+  return SafeArea(child: Scaffold(body: GoogleSignInButton(onPressed: () async {
+    await signInWithGoogle();
+  })));
 }
 
-void logout() {
-  FirebaseAuth.instance.signOut();
+Future<void> logout() async {
+  //signout user from FirebaseAuth
+  await FirebaseAuth.instance.signOut();
+  //revoke previous authentication so user isn't automatically signed in again
+  GoogleSignIn().disconnect();
+  userCredential = null;
 }

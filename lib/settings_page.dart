@@ -12,17 +12,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        Text("HELLO"),
-        Text("HELLO"),
-        Text("HELLO"),
-        Text("HELLO"),
-        Text("HELLO"),
-        Text("HELLO"),
-        FlatButton(
-            onPressed: () {
-              logout();
-            },
-            child: Text("LOGOUT")),
+        Align(
+          child: FlatButton(
+              onPressed: () async {
+                await logout();
+              },
+              child: Text("LOGOUT")),
+          alignment: Alignment.centerLeft,
+        ),
       ],
     );
   }
