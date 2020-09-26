@@ -2,95 +2,30 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:taskapp/task_loader.dart';
+
 import 'task.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
-// Import the firebase_core and cloud_firestore plugin
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-class TasksPage extends StatefulWidget {
-  TasksPage(Key key) : super(key: key);
-
-  @override
-  _TasksPageState createState() => _TasksPageState();
-}
-
-class _TasksPageState extends State<TasksPage> {
-  List<Task> _tasks = [];
-  bool _tasksLoaded = false;
-
-  StreamSubscription<QuerySnapshot> listener;
-
-  @override
-  void initState() {
-    loadTasks();
-
-    listener = taskListListener(refreshTasks);
-
-    super.initState();
-  }
-
-  @override
-  void deactivate() {
-    //Cancel listener.
-    listener.cancel();
-    super.deactivate();
-  }
-
-  Future<void> loadTasks() async {
-    print("LOADING TASKS");
-    List<Task> loadedTasks = await getOrderedTasks();
-    //check if TaskPage is still in widget tree before setting state (fixes error)
-    if (this.mounted) {
-      setState(() {
-        _tasks = loadedTasks;
-        _tasksLoaded = true;
-      });
-    }
-    print("TASKS LOADED");
-  }
-
-  Future<void> refreshTasks() async {
-    print('REFRESHING TASK PAGE');
-    if (await online()) {
-      FirebaseFirestore.instance.enableNetwork();
-      await loadTasks();
-    } else {
-      FirebaseFirestore.instance.disableNetwork();
-      loadTasks();
-    }
-  }
+class TasksPage extends StatelessWidget {
+  TasksPage(Key key);
 
   @override
   Widget build(BuildContext context) {
-    if (_tasksLoaded && _tasks.isNotEmpty) {
-      return Scaffold(
-          body: RefreshIndicator(
-        child: TaskList(
-            PageStorageKey("Task Page Key"), false, _tasks, refreshTasks),
-        onRefresh: refreshTasks,
-      ));
-    } else {
-      return Scaffold(
-          body: Center(
-        child: Text("No Tasks... Add One"),
-      ));
-    }
+    return TaskLoader((Key key, List<Task> tasks) {
+      return TaskList(key, false, tasks);
+    });
   }
 }
 
 class TaskList extends StatefulWidget {
   final bool _doubleTapped;
   final List<Task> _tasks;
-  final VoidCallback refreshTasks;
 
-  TaskList(Key key, this._doubleTapped, this._tasks, this.refreshTasks)
-      : super(key: key);
+  TaskList(Key key, this._doubleTapped, this._tasks) : super(key: key);
 
   bool get doubleTapped => _doubleTapped;
   List<Task> get tasks => _tasks;
@@ -114,15 +49,16 @@ class _TaskListState extends State<TaskList> {
     }
     print("BUILDING TASKLIST");
     return ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        reverse: false,
-        controller: scrollController,
-        /*Use itermCount (length of list) and itemExtent (height of an item)
+      physics: const AlwaysScrollableScrollPhysics(),
+      reverse: false,
+      controller: scrollController,
+      /*Use itermCount (length of list) and itemExtent (height of an item)
         for improved speed switching between tabs (rebuilding list) */
-        itemCount: this.widget._tasks.length,
-        // itemExtent: 150,
-        itemBuilder: (context, index) {
-          return TaskCard(this.widget.key, widget._tasks[index]);
-        });
+      itemCount: this.widget._tasks.length,
+      // itemExtent: 150,
+      itemBuilder: (context, index) {
+        return TaskCard(this.widget.key, widget._tasks[index]);
+      },
+    );
   }
 }

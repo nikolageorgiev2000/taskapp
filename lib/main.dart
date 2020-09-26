@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
-import 'settings_page.dart';
+import 'package:taskapp/settings.dart';
+
+import 'stats_page.dart';
 import 'BaseAuth.dart';
 import 'task.dart';
 import 'tasks_page.dart';
@@ -101,6 +103,7 @@ class _MenuControllerState extends State<MenuController> {
         setState(() {
           _loggedIn = true;
         });
+        currentUser = user;
       }
     });
   }
@@ -111,7 +114,7 @@ class _MenuControllerState extends State<MenuController> {
     pages = [
       // TaskList
       TasksPage(widget.key),
-      SettingsPage()
+      StatsPage()
     ];
     floatingButtons = [
       FloatingActionButton(
@@ -138,24 +141,36 @@ class _MenuControllerState extends State<MenuController> {
   Widget build(BuildContext context) {
     if (_loggedIn) {
       return Scaffold(
-        // appBar: AppBar(
-        //     centerTitle: true,
-        //     title: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        //       Align(alignment: Alignment.center, child: Text("hi")),
-        //       Align(alignment: Alignment.centerRight, child: Icon(Icons.settings))
-        //     ])),
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text((_selectedIndex == 0) ? "All Tasks" : "Your Task Stats"),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.settings,
+              ),
+              onPressed: () {
+                showSettings(context);
+              },
+              splashRadius: 25,
+            ),
+          ],
+        ),
         body: SafeArea(
             //Use PageStorage to save the scroll offset using the ScrollController in TaskList
-            child: PageStorage(bucket: _bucket, child: pages[_selectedIndex])),
+            child: PageStorage(
+                //generate key from name of widget
+                key: PageStorageKey(pages[_selectedIndex].toString()),
+                bucket: _bucket,
+                child: pages[_selectedIndex])),
         floatingActionButton: floatingButtons[_selectedIndex],
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           items: [
+            BottomNavigationBarItem(icon: Icon(Icons.alarm_on), label: "Tasks"),
             BottomNavigationBarItem(
-                icon: Icon(Icons.alarm_on), title: Text("Tasks")),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.settings), title: Text("Options")),
+                icon: Icon(Icons.bar_chart), label: "Stats"),
           ],
           iconSize: 30,
           currentIndex: _selectedIndex,

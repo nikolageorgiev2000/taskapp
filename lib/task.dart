@@ -721,6 +721,7 @@ class Task {
     // checks if the current changes have been saved with save button
     bool saved = false;
 
+    //create deep copy of task being edited to show changes on modal sheet
     Task newTask = this.clone();
 
     while (editting) {
@@ -1009,152 +1010,6 @@ class Task {
     }
   }
 
-  // Future<void> viewTaskDetails(BuildContext context) async {
-  //   // wait for editing to be finished on modal sheet
-  //   await showModalBottomSheet<void>(
-  //       isScrollControlled: true,
-  //       context: context,
-  //       enableDrag: false,
-  //       builder: (BuildContext context) {
-  //         return StatefulBuilder(
-  //             builder: (BuildContext context, StateSetter setModalState) {
-  //           // initialize initial date and time task is due
-  //           DateTime initDate =
-  //               DateTime.fromMillisecondsSinceEpoch(this.epochDue);
-  //           print(this.taskUID);
-  //           print(this.location);
-  //           print(initDate.toString());
-  //           TimeOfDay initTime = TimeOfDay.fromDateTime(initDate);
-  //           Category initCategory = this.taskCategory;
-
-  //           // Editable UI
-  //           return Column(
-  //             mainAxisAlignment: MainAxisAlignment.center,
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: <Widget>[
-  //               Padding(
-  //                 padding: EdgeInsets.all(5),
-  //               ),
-
-  //               //Task Name
-  //               TextFormField(
-  //                 initialValue: this.name,
-  //                 maxLength: 30,
-  //                 minLines: 1,
-  //                 maxLines: 1,
-  //                 textCapitalization: TextCapitalization.sentences,
-  //                 decoration: InputDecoration(
-  //                   contentPadding: EdgeInsets.all(20),
-  //                   enabled: false,
-  //                   focusedBorder: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
-  //                   enabledBorder: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
-  //                   labelText: 'Task Name',
-  //                   labelStyle: TextStyle(color: Colors.blueGrey),
-  //                   counterText: null,
-  //                 ),
-  //                 textInputAction: TextInputAction.done,
-  //                 onChanged: (inputString) {
-  //                   this.name = inputString;
-  //                 },
-  //               ),
-
-  //               //Description
-  //               TextFormField(
-  //                 initialValue: this.description,
-  //                 maxLength: 280,
-  //                 minLines: 1,
-  //                 maxLines: 10,
-  //                 textCapitalization: TextCapitalization.sentences,
-  //                 decoration: InputDecoration(
-  //                   contentPadding: EdgeInsets.all(20),
-  //                   enabled: false,
-  //                   focusedBorder: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
-  //                   enabledBorder: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
-  //                   labelText: 'Description',
-  //                   labelStyle: TextStyle(color: Colors.blueGrey),
-  //                   counterText: null,
-  //                 ),
-  //                 textInputAction: TextInputAction.done,
-  //                 onChanged: (inputString) {
-  //                   this.description = inputString;
-  //                 },
-  //               ),
-
-  //               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-  //                 //Date Due
-  //                 FlatButton(
-  //                     onPressed: () async {},
-  //                     child: Text(formatDate(
-  //                         DateTime.fromMillisecondsSinceEpoch(this.epochDue)))),
-  //                 //Time Due
-  //                 FlatButton(
-  //                     onPressed: () async {},
-  //                     child: Text(formatTime(context, initTime))),
-  //               ]),
-
-  //               //Location
-  //               TextFormField(
-  //                 initialValue: this.location,
-  //                 maxLength: 30,
-  //                 minLines: 1,
-  //                 maxLines: 1,
-  //                 textCapitalization: TextCapitalization.sentences,
-  //                 decoration: InputDecoration(
-  //                   contentPadding: EdgeInsets.all(20),
-  //                   enabled: false,
-  //                   focusedBorder: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
-  //                   enabledBorder: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(1), gapPadding: 1),
-  //                   labelText: 'Location',
-  //                   labelStyle: TextStyle(color: Colors.blueGrey),
-  //                   counterText: null,
-  //                 ),
-  //                 textInputAction: TextInputAction.done,
-  //                 onChanged: (inputString) {
-  //                   this.location = inputString;
-  //                 },
-  //               ),
-
-  //               //Category selection
-  //               DropdownButton<Category>(
-  //                   value: initCategory,
-  //                   items: List.generate(
-  //                       Category.values.length,
-  //                       (i) => DropdownMenuItem(
-  //                             value: Category.values[i],
-  //                             child: Text(categoryToString(Category.values[i])),
-  //                           )),
-  //                   onChanged: (val) {
-  //                     setModalState(() {
-  //                       this.taskCategory = val;
-  //                     });
-  //                   }),
-
-  //               Padding(
-  //                 padding: EdgeInsets.all(5),
-  //               ),
-
-  //               //Padding to move modal sheet up with keyboard
-  //               AnimatedPadding(
-  //                 padding: MediaQuery.of(context).viewInsets,
-  //                 duration: const Duration(milliseconds: 100),
-  //                 curve: Curves.decelerate,
-  //                 child: new Container(
-  //                   alignment: Alignment.bottomCenter,
-  //                   child: Container(),
-  //                 ),
-  //               ),
-  //             ],
-  //           );
-  //         });
-  //       });
-  // }
-
   @override
   bool operator ==(Object other) =>
       other is Task &&
@@ -1177,7 +1032,3 @@ Category stringToCategory(String str) {
 String categoryToString(Category c) {
   return c.toString().split('.').last;
 }
-
-/*TODO: figure out how to: 
-    use firestore functions offline
-*/
