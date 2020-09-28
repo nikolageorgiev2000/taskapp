@@ -90,6 +90,8 @@ class _MenuControllerState extends State<MenuController> {
   List<Widget> floatingButtons;
   StreamSubscription<User> _auth;
   bool _loggedIn = false;
+  StatsPeriod statsPeriodSpecified;
+  String taskCategorySpecified;
 
   void initAuthListener() {
     _auth = FirebaseAuth.instance.authStateChanges().listen((User user) {
@@ -108,18 +110,20 @@ class _MenuControllerState extends State<MenuController> {
     });
   }
 
+  void refreshPages() {
+    pages = [
+      // TaskList
+      TasksPage(widget.key, taskCategorySpecified),
+      StatsPage(widget.key, statsPeriodSpecified)
+    ];
+  }
+
   @override
   void initState() {
     initAuthListener();
-    pages = [
-      // TaskList
-      TasksPage(widget.key),
-      StatsPage(widget.key)
-    ];
     floatingButtons = [
       FloatingActionButton(
         child: Icon(Icons.add),
-        // label: Text("NEW TASK"),
         backgroundColor: Colors.lightBlueAccent.shade200,
         onPressed: () {
           createTask(context);
@@ -127,6 +131,10 @@ class _MenuControllerState extends State<MenuController> {
       ),
       null,
     ];
+
+    statsPeriodSpecified = StatsPeriod.All;
+    taskCategorySpecified = TaskCategoryExtension.extendedValues.last;
+    refreshPages();
 
     super.initState();
   }
@@ -139,11 +147,58 @@ class _MenuControllerState extends State<MenuController> {
 
   @override
   Widget build(BuildContext context) {
+    print("---MAIN REBUILT");
+    TextStyle appBarTitleStyle = TextStyle(
+        color: Colors.black, fontWeight: FontWeight.w500, fontSize: 21);
     if (_loggedIn) {
       return Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text((_selectedIndex == 0) ? "All Tasks" : "Your Task Stats"),
+          title: Row(mainAxisSize: MainAxisSize.min, children: [
+            (_selectedIndex == 0)
+                ? DropdownButton(
+                    icon: Icon(Icons.keyboard_arrow_down),
+                    style: appBarTitleStyle,
+                    // underline: Container(),
+                    value: taskCategorySpecified,
+                    isDense: true,
+                    items: List.generate(
+                        TaskCategoryExtension.extendedValues.length,
+                        (i) => DropdownMenuItem<String>(
+                              value: TaskCategoryExtension.extendedValues[i],
+                              child:
+                                  Text(TaskCategoryExtension.extendedValues[i]),
+                            )),
+                    onChanged: (String sp) {
+                      setState(() {
+                        taskCategorySpecified = sp;
+                        refreshPages();
+                      });
+                    })
+                : DropdownButton(
+                    icon: Icon(Icons.keyboard_arrow_down),
+                    style: appBarTitleStyle,
+                    // underline: Container(),
+                    value: statsPeriodSpecified,
+                    isDense: true,
+                    items: List.generate(
+                        StatsPeriod.values.length,
+                        (i) => DropdownMenuItem(
+                              value: StatsPeriod.values[i],
+                              child: Text(describeEnum(StatsPeriod.values[i])),
+                            )),
+                    onChanged: (StatsPeriod sp) {
+                      setState(() {
+                        statsPeriodSpecified = sp;
+                        refreshPages();
+                      });
+                    }),
+            Expanded(
+                child: Text(
+              (_selectedIndex == 0) ? " Tasks" : " Figures",
+              style: appBarTitleStyle,
+            ))
+          ]),
           actions: [
             IconButton(
               icon: Icon(

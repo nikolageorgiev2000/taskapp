@@ -1,15 +1,24 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
+import 'package:taskapp/stats_page.dart';
 import 'package:taskapp/task.dart';
 
 class TaskLoader extends StatefulWidget {
   final Function(Key, List<Task>) widgetWithTasks;
   final Function(Key, List<Task>) widgetNoTasks;
-  const TaskLoader(this.widgetWithTasks, {Key key, this.widgetNoTasks})
-      : super(key: key);
+  final StatsPeriod statsPeriodSpecified;
+  final String taskCategorySpecified;
+  const TaskLoader(
+    this.widgetWithTasks,
+    this.statsPeriodSpecified,
+    this.taskCategorySpecified, {
+    Key key,
+    this.widgetNoTasks,
+  }) : super(key: key);
 
   @override
   _TaskLoaderState createState() => _TaskLoaderState();
@@ -30,6 +39,14 @@ class _TaskLoaderState extends State<TaskLoader> {
     super.initState();
   }
 
+  //important for when changing taskCategory, as the widget won't be deactivated+initialized, just updated
+  @override
+  void didUpdateWidget(covariant TaskLoader oldWidget) {
+    refreshTasks();
+
+    super.didUpdateWidget(oldWidget);
+  }
+
   @override
   void deactivate() {
     //Cancel listener.
@@ -42,12 +59,69 @@ class _TaskLoaderState extends State<TaskLoader> {
     List<Task> loadedTasks = await getOrderedTasks();
     //check if TaskPage is still in widget tree before setting state (fixes error)
     if (this.mounted) {
+      //filter task list if a category is specified and is not "All"
+      loadedTasks = filterTasks(loadedTasks);
       setState(() {
         _tasks = loadedTasks;
         _tasksLoaded = true;
       });
     }
     print("TASKS LOADED");
+  }
+
+  List<Task> filterTasks(List<Task> loadedTasks) {
+    print("statsPeriodSpecified :  ${widget.statsPeriodSpecified}");
+    List<Task> temp = List.from(loadedTasks);
+    if (widget.taskCategorySpecified != null &&
+        widget.taskCategorySpecified !=
+            TaskCategoryExtension.extendedValues.last) {
+      temp = temp
+          .where((e) =>
+              (describeEnum(e.taskCategory) == widget.taskCategorySpecified))
+          .toList();
+    }
+    if (widget.statsPeriodSpecified != null) {
+      // only show statistics about completed tasks!!!
+      temp = temp.where((e) => (e.epochCompleted != -1)).toList();
+      // adjust for period specified
+      switch (widget.statsPeriodSpecified) {
+        case StatsPeriod.Daily:
+          DateTime dayBefore = DateTime.now().subtract(Duration(days: 1));
+          temp = temp
+              .where((e) =>
+                  DateTime.fromMillisecondsSinceEpoch(e.epochCompleted)
+                      .isAfter(dayBefore))
+              .toList();
+          break;
+        case StatsPeriod.Weekly:
+          DateTime weekBefore = DateTime.now().subtract(Duration(days: 7));
+          temp = temp
+              .where((e) =>
+                  DateTime.fromMillisecondsSinceEpoch(e.epochCompleted)
+                      .isAfter(weekBefore))
+              .toList();
+          break;
+        case StatsPeriod.Monthly:
+          DateTime monthBefore = DateTime.now().subtract(Duration(days: 30));
+          temp = temp
+              .where((e) =>
+                  DateTime.fromMillisecondsSinceEpoch(e.epochCompleted)
+                      .isAfter(monthBefore))
+              .toList();
+          break;
+        case StatsPeriod.Annual:
+          DateTime yearBefore = DateTime.now().subtract(Duration(days: 365));
+          temp = temp
+              .where((e) =>
+                  DateTime.fromMillisecondsSinceEpoch(e.epochCompleted)
+                      .isAfter(yearBefore))
+              .toList();
+          break;
+        default:
+          break;
+      }
+    }
+    return temp;
   }
 
   Future<void> refreshTasks() async {
@@ -63,6 +137,7 @@ class _TaskLoaderState extends State<TaskLoader> {
 
   @override
   Widget build(BuildContext context) {
+    print("---TaskLoader REBUILT");
     if (_tasksLoaded && _tasks.isNotEmpty) {
       return RefreshIndicator(
         child: widget.widgetWithTasks(widget.key, _tasks),

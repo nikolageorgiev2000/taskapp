@@ -6,18 +6,25 @@ import 'package:flutter/material.dart';
 //instead import charts_flutter 'as charts' and prefix libs with 'charts.'
 import 'package:flutter/src/painting/text_style.dart' as text_style;
 
+//https://google.github.io/charts/flutter/gallery
 import 'package:charts_flutter/flutter.dart';
 import 'package:taskapp/task.dart';
 import 'package:taskapp/task_loader.dart';
 
 class StatsPage extends StatelessWidget {
-  StatsPage(Key key);
+  final StatsPeriod statsPeriodSpecified;
+  StatsPage(Key key, this.statsPeriodSpecified);
 
   @override
   Widget build(BuildContext context) {
-    return TaskLoader((Key key, List<Task> tasks) {
-      return StatsList(key, tasks);
-    });
+    return TaskLoader(
+      (Key key, List<Task> tasks) {
+        return StatsList(key, tasks);
+      },
+      statsPeriodSpecified,
+      // last is All tasks
+      TaskCategoryExtension.extendedValues.last,
+    );
   }
 }
 
@@ -35,19 +42,40 @@ class _StatsListState extends State<StatsList> {
   // where Series(data: List<dataType>)
   List<Series<String, String>> _tasksMinutesPerCategory = List();
   List<Series<String, String>> _tasksCompletedPerCategory = List();
+  List<Series<String, String>> _tasksAvgPerCategory = List();
   List<Series<DateTime, DateTime>> _tasksCompletedOverTime = List();
 
   bool _animate = true;
 
   @override
   void initState() {
-    // chart 1 series : minutes spent per category
-    var minutesPerCategory = Map.fromIterable(TaskCategory.values,
+    refreshSeries();
+
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant StatsList oldWidget) {
+    refreshSeries();
+
+    super.didUpdateWidget(oldWidget);
+  }
+
+  void refreshSeries() {
+    _tasksMinutesPerCategory = List();
+    _tasksCompletedPerCategory = List();
+    _tasksAvgPerCategory = List();
+    _tasksCompletedOverTime = List();
+
+    // CHART 1 series : minutes spent per category
+    Map<String, int> minutesPerCategory = Map.fromIterable(TaskCategory.values,
         key: (e) => describeEnum(e), value: (e) => 0);
     for (var task in widget.tasks) {
+      //add onto total time per category
       minutesPerCategory[describeEnum(task.taskCategory)] +=
           calcTimeSpent(task.workPeriods);
     }
+    //convert to minutes, since calcTimeSpent returns seconds
     minutesPerCategory =
         minutesPerCategory.map((key, value) => MapEntry(key, value ~/ 60));
     var minutesPerCategoryValues = minutesPerCategory.keys.toList();
@@ -59,7 +87,7 @@ class _StatsListState extends State<StatsList> {
         measureFn: (String t, _) => minutesPerCategory[t],
         data: minutesPerCategoryValues));
 
-    // chart 2 series : completed tasks per category
+    // CHART 2 series : completed tasks per category
 
     var completedPerCategory = Map.fromIterable(TaskCategory.values,
         key: (e) => describeEnum(e), value: (e) => 0);
@@ -69,7 +97,8 @@ class _StatsListState extends State<StatsList> {
     }
     completedPerCategory =
         completedPerCategory.map((key, value) => MapEntry(key, value));
-    var completedPerCategoryValues = completedPerCategory.keys.toList();
+    List<String> completedPerCategoryValues =
+        completedPerCategory.keys.toList();
     completedPerCategoryValues.sort(
         (x, y) => (completedPerCategory[x] > completedPerCategory[y] ? -1 : 1));
     _tasksCompletedPerCategory.add(Series(
@@ -78,7 +107,24 @@ class _StatsListState extends State<StatsList> {
         measureFn: (String t, _) => completedPerCategory[t],
         data: completedPerCategoryValues));
 
-    // chart 3 series : work on tasks over time per category
+    // CHART 3 series : average minutes on task per category
+
+    Map<String, int> avgPerCategory = Map.fromIterable(TaskCategory.values,
+        key: (e) => describeEnum(e),
+        value: (e) => completedPerCategory[describeEnum(e)] == 0
+            ? 0
+            : minutesPerCategory[describeEnum(e)] ~/
+                completedPerCategory[describeEnum(e)]);
+    List<String> avgPerCategoryValues = avgPerCategory.keys.toList();
+    avgPerCategoryValues
+        .sort((x, y) => (avgPerCategory[x] > avgPerCategory[y] ? -1 : 1));
+    _tasksAvgPerCategory.add(Series(
+        id: "",
+        data: avgPerCategoryValues,
+        domainFn: (String t, _) => t,
+        measureFn: (String t, _) => avgPerCategory[t]));
+
+    // CHART 4 series : work on tasks over time per category
 
     var completedOverTime = Map.fromIterable(TaskCategory.values,
         key: (e) => describeEnum(e), value: (e) => List<DateTime>());
@@ -105,15 +151,13 @@ class _StatsListState extends State<StatsList> {
         ? -1
         : 1));
     for (String t in completedOverTimeValues) {
-      // print("$t + ${completedOverTime[t]}");
       _tasksCompletedOverTime.add(Series(
           id: t,
           domainFn: (DateTime dt, int i) => dt,
+          //use array index as cummulative counter of number of completed tasks
           measureFn: (DateTime dt, int i) => i,
           data: completedOverTime[t]));
     }
-
-    super.initState();
   }
 
   @override
@@ -125,7 +169,7 @@ class _StatsListState extends State<StatsList> {
         Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
         ),
-        // chart 1
+        // CHART 1
         Center(child: Text("Minutes Spent per Category", style: chartTitle)),
         Container(
             padding: EdgeInsets.fromLTRB(20, 10, 0, 10),
@@ -142,7 +186,7 @@ class _StatsListState extends State<StatsList> {
         Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
         ),
-        // chart 2
+        // CHART 2
         Center(child: Text("Completed Tasks per Category", style: chartTitle)),
         Container(
             padding: EdgeInsets.fromLTRB(20, 10, 0, 10),
@@ -159,7 +203,24 @@ class _StatsListState extends State<StatsList> {
         Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
         ),
-        // chart 3
+        // CHART 3
+        Center(child: Text("Average Minutes per Category", style: chartTitle)),
+        Container(
+            padding: EdgeInsets.fromLTRB(20, 10, 0, 10),
+            height: 300,
+            child: BarChart(
+              _tasksAvgPerCategory,
+              domainAxis: OrdinalAxisSpec(
+                renderSpec: SmallTickRendererSpec(
+                  labelRotation: 30,
+                ),
+              ),
+              animate: _animate,
+            )),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+        ),
+        // CHART 4
         Center(child: Text("Completed Tasks over Time", style: chartTitle)),
         Container(
             padding: EdgeInsets.fromLTRB(20, 10, 0, 10),
@@ -169,15 +230,15 @@ class _StatsListState extends State<StatsList> {
               // defaultRenderer:
               //     LineRendererConfig(includeArea: true, stacked: true),
               domainAxis: DateTimeAxisSpec(
-                // tickProviderSpec: DateTimeEndPointsTickProviderSpec(),
-                renderSpec: SmallTickRendererSpec(
-                    // labelRotation: 30,
-                    ),
-              ),
+                  // tickProviderSpec: DateTimeEndPointsTickProviderSpec(),
+                  // renderSpec: SmallTickRendererSpec(
+                  //     // labelRotation: 30,
+                  //     ),
+                  ),
               animate: _animate,
               behaviors: [
                 SeriesLegend(
-                    desiredMaxColumns: 3,
+                    desiredMaxColumns: 4,
                     position: BehaviorPosition.bottom,
                     horizontalFirst: true,
                     entryTextStyle: TextStyleSpec(fontSize: 15)),
@@ -199,6 +260,8 @@ List centeredSort(List l) {
   }
   return cent;
 }
+
+enum StatsPeriod { Daily, Weekly, Monthly, Annual, All }
 
 /*
 Stats Ideas:

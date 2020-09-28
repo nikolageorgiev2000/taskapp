@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:taskapp/stats_page.dart';
 import 'package:taskapp/task_loader.dart';
 
 import 'task.dart';
@@ -11,13 +12,22 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 
 class TasksPage extends StatelessWidget {
-  TasksPage(Key key);
+  final String taskCategorySpecified;
+
+  TasksPage(Key key, this.taskCategorySpecified);
 
   @override
   Widget build(BuildContext context) {
-    return TaskLoader((Key key, List<Task> tasks) {
-      return TaskList(key, false, tasks);
-    });
+    print("---TasksPage REBUILT");
+    print("taskCategorySpecified: $taskCategorySpecified");
+    return TaskLoader(
+      (Key key, List<Task> tasks) {
+        return TaskList(key, false, tasks);
+      },
+      // statsPeriodSpecified must be null, it's filtering is used
+      null,
+      taskCategorySpecified,
+    );
   }
 }
 

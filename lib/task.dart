@@ -537,7 +537,7 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
   if (docDict['taskCategory'] != null) {
     newTask.taskCategory = stringToTaskCategory(docDict['taskCategory']);
   } else {
-    newTask.taskCategory = TaskCategory.None;
+    newTask.taskCategory = TaskCategory.Other;
   }
   if (docDict['epochCompleted'] != null) {
     newTask.epochCompleted = docDict['epochCompleted'];
@@ -645,7 +645,7 @@ class Task {
       this.epochCompleted = -1,
       this.description = "",
       this.location = "",
-      this.taskCategory = TaskCategory.None,
+      this.taskCategory = TaskCategory.Other,
       this.eventUID = "",
       this.epochStart = -1,
       workPeriods});
@@ -959,7 +959,7 @@ class Task {
                   //Padding to move modal sheet up with keyboard
                   AnimatedPadding(
                     padding: MediaQuery.of(context).viewInsets,
-                    duration: const Duration(milliseconds: 100),
+                    duration: const Duration(milliseconds: 150),
                     curve: Curves.decelerate,
                     child: new Container(
                       alignment: Alignment.bottomCenter,
@@ -1018,15 +1018,21 @@ class Task {
 }
 
 enum TaskCategory {
-  None,
+  Other,
   Work,
   School,
   Hobby,
   Health,
   Social,
   Family,
-  Chores,
-  Chill
+  Chill,
+}
+
+// Extend TaskCategory enum with new categories (e.g. All)
+// 'All' NEEDS TO BE LAST (assumed in rest of code that it is appended to end)
+class TaskCategoryExtension {
+  static List<String> get extendedValues =>
+      TaskCategory.values.map((e) => describeEnum(e)).toList() + ["All"];
 }
 
 TaskCategory stringToTaskCategory(String str) {
