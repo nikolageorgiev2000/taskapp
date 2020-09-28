@@ -126,7 +126,7 @@ class _TaskCardState extends State<TaskCard> {
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -270,7 +270,7 @@ class _TaskCardState extends State<TaskCard> {
               ),
             )),
         elevation: 3,
-        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
       );
     } else {
       //TASK COMPLETED
@@ -287,7 +287,7 @@ class _TaskCardState extends State<TaskCard> {
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -387,7 +387,6 @@ class _TaskCardState extends State<TaskCard> {
                           // Detect when column is pressed and released to avoid unwanted interaction with inksplash
                           onTapDown: (details) {
                             _flatButtonPressed = true;
-                            print("DOWN");
                           },
                           onTapUp: (details) {
                             _flatButtonPressed = false;
@@ -397,17 +396,15 @@ class _TaskCardState extends State<TaskCard> {
                           },
                           onLongPressStart: (details) {
                             _flatButtonPressed = true;
-                            print("START");
                           },
                           onLongPressEnd: (details) {
                             _flatButtonPressed = false;
-                            print("END");
                           }))
                 ],
               ),
             )),
         elevation: 3,
-        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
       );
     }
   }
@@ -444,7 +441,6 @@ int calcTimeSpent(List<Map<String, int>> tP) {
   int e = tP[0]['end'];
   for (var i = 1; i < tP.length; i++) {
     if (tP[i]['start'] > e) {
-      print(totalTime);
       totalTime += e - s;
       s = tP[i]['start'];
       e = tP[i]['end'];
@@ -539,9 +535,9 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
     newTask.location = "";
   }
   if (docDict['taskCategory'] != null) {
-    newTask.taskCategory = stringToCategory(docDict['taskCategory']);
+    newTask.taskCategory = stringToTaskCategory(docDict['taskCategory']);
   } else {
-    newTask.taskCategory = Category.None;
+    newTask.taskCategory = TaskCategory.None;
   }
   if (docDict['epochCompleted'] != null) {
     newTask.epochCompleted = docDict['epochCompleted'];
@@ -637,7 +633,7 @@ class Task {
   // optional parameters
   String description;
   String location;
-  Category taskCategory;
+  TaskCategory taskCategory;
   int epochLastEdit;
   int epochCompleted;
   String eventUID;
@@ -649,7 +645,7 @@ class Task {
       this.epochCompleted = -1,
       this.description = "",
       this.location = "",
-      this.taskCategory = Category.None,
+      this.taskCategory = TaskCategory.None,
       this.eventUID = "",
       this.epochStart = -1,
       workPeriods});
@@ -709,7 +705,7 @@ class Task {
       "epochCompleted": epochCompleted,
       "description": description,
       "location": location,
-      "taskCategory": categoryToString(taskCategory),
+      "taskCategory": describeEnum(taskCategory),
       "eventUID": eventUID,
       "epochStart": epochStart,
     };
@@ -736,11 +732,9 @@ class Task {
               // initialize initial date and time task is due
               DateTime initDate =
                   DateTime.fromMillisecondsSinceEpoch(newTask.epochDue);
-              print(newTask.taskUID);
-              print(newTask.location);
-              print(initDate.toString());
+              print("Editting: TaskUID ${newTask.taskUID}");
               TimeOfDay initTime = TimeOfDay.fromDateTime(initDate);
-              Category initCategory = newTask.taskCategory;
+              TaskCategory initTaskCategory = newTask.taskCategory;
 
               // functions to edit date and time with nice UI
               Future<void> _showDatePicker() async {
@@ -942,15 +936,15 @@ class Task {
                     },
                   ),
 
-                  //Category selection
-                  DropdownButton<Category>(
-                      value: initCategory,
+                  //TaskCategory selection
+                  DropdownButton<TaskCategory>(
+                      value: initTaskCategory,
                       items: List.generate(
-                          Category.values.length,
+                          TaskCategory.values.length,
                           (i) => DropdownMenuItem(
-                                value: Category.values[i],
+                                value: TaskCategory.values[i],
                                 child:
-                                    Text(categoryToString(Category.values[i])),
+                                    Text(describeEnum(TaskCategory.values[i])),
                               )),
                       onChanged: (val) {
                         setModalState(() {
@@ -1023,12 +1017,19 @@ class Task {
   int get hashCode => this.hashCode;
 }
 
-enum Category { None, Work, School, Hobby, Health, Social, Family, Chores }
-
-Category stringToCategory(String str) {
-  return Category.values.firstWhere((e) => e.toString() == 'Category.' + str);
+enum TaskCategory {
+  None,
+  Work,
+  School,
+  Hobby,
+  Health,
+  Social,
+  Family,
+  Chores,
+  Chill
 }
 
-String categoryToString(Category c) {
-  return c.toString().split('.').last;
+TaskCategory stringToTaskCategory(String str) {
+  return TaskCategory.values
+      .firstWhere((e) => e.toString() == 'TaskCategory.' + str);
 }

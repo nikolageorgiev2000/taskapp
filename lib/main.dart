@@ -114,7 +114,7 @@ class _MenuControllerState extends State<MenuController> {
     pages = [
       // TaskList
       TasksPage(widget.key),
-      StatsPage()
+      StatsPage(widget.key)
     ];
     floatingButtons = [
       FloatingActionButton(
