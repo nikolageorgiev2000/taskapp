@@ -149,7 +149,7 @@ class _MenuControllerState extends State<MenuController> {
       return Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Row(mainAxisSize: MainAxisSize.min, children: [
+          title: Row(children: [
             (_selectedIndex == 0)
                 ? DropdownButton(
                     icon: Icon(Icons.keyboard_arrow_down),

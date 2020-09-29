@@ -729,6 +729,22 @@ class Task {
     //create deep copy of task being edited to show changes on modal sheet
     Task newTask = this.clone();
 
+    TextEditingController createdTextEditController(String text) =>
+        TextEditingController.fromValue(TextEditingValue(
+          text: text,
+          // Might have to set selection to end of text if it automatically goes to start (potential bug fix)
+          // selection:
+          //     TextSelection.fromPosition(TextPosition(offset: text.length))
+        ));
+
+    // instantiate controllers outside of editor build otherwise selection bugs happen as mentioned above
+    TextEditingController taskNameController =
+        createdTextEditController(newTask.name);
+    TextEditingController taskDescriptionController =
+        createdTextEditController(newTask.description);
+    TextEditingController taskLocationController =
+        createdTextEditController(newTask.location);
+
     while (editting) {
       // wait for editing to be finished on modal sheet
       await showModalBottomSheet<void>(
@@ -744,6 +760,9 @@ class Task {
               print("Editting: TaskUID ${newTask.taskUID}");
               TimeOfDay initTime = TimeOfDay.fromDateTime(initDate);
               TaskCategory initTaskCategory = newTask.taskCategory;
+
+              InputBorder textFieldBorder = OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10), gapPadding: 1);
 
               // functions to edit date and time with nice UI
               Future<void> _showDatePicker() async {
@@ -776,207 +795,217 @@ class Task {
               }
 
               // Editable UI
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  // Buttons to Save/Cancel Task
-                  Center(
-                      child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                          icon: Icon(Icons.save),
-                          onPressed: () async {
-                            await saveTask(newTask);
-                            saved = true;
-                          }),
-                      Row(children: [
-                        IconButton(
-                          icon: Icon(Icons.add_to_photos),
-                          onPressed: () async {
-                            await showDialog(
-                                context: context,
-                                child: AlertDialog(
-                                  content: Text("Duplicate task?"),
-                                  actions: [
-                                    FlatButton(
-                                        child: Text("Confirm"),
-                                        onPressed: () async {
-                                          await duplicateTask(this);
-                                          Navigator.of(context).pop();
-                                        }),
-                                    FlatButton(
-                                        child: Text("Cancel"),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        })
-                                  ],
-                                ));
-                          },
+              return Padding(
+                  padding: EdgeInsets.all(5),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      // Buttons to Save/Cancel Task
+                      Center(
+                          child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                              icon: Icon(Icons.save),
+                              onPressed: () async {
+                                await saveTask(newTask);
+                                saved = true;
+                              }),
+                          Row(children: [
+                            IconButton(
+                              icon: Icon(Icons.add_to_photos),
+                              onPressed: () async {
+                                await showDialog(
+                                    context: context,
+                                    child: AlertDialog(
+                                      content: Text("Duplicate task?"),
+                                      actions: [
+                                        FlatButton(
+                                            child: Text("Confirm"),
+                                            onPressed: () async {
+                                              await duplicateTask(this);
+                                              Navigator.of(context).pop();
+                                            }),
+                                        FlatButton(
+                                            child: Text("Cancel"),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            })
+                                      ],
+                                    ));
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () async {
+                                bool delete = false;
+                                await showDialog(
+                                    context: context,
+                                    child: AlertDialog(
+                                      content: Text("Delete task?"),
+                                      actions: [
+                                        FlatButton(
+                                            child: Text("Confirm"),
+                                            onPressed: () {
+                                              delete = true;
+                                              Navigator.of(context).pop();
+                                            }),
+                                        FlatButton(
+                                            child: Text("Cancel"),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            })
+                                      ],
+                                    ));
+                                // if confirmed deletion, end editing and pop out of modal sheet
+                                if (delete) {
+                                  await deleteTask(this);
+                                  editting = false;
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                            )
+                          ]),
+                        ],
+                      )),
+
+                      Padding(
+                        padding: EdgeInsets.all(5),
+                      ),
+
+                      //Task Name
+                      TextField(
+                        controller: taskNameController,
+                        maxLength: 30,
+                        minLines: 1,
+                        maxLines: 1,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.all(20),
+                          focusedBorder: textFieldBorder,
+                          enabledBorder: textFieldBorder,
+                          labelText: 'Task Name',
+                          labelStyle: TextStyle(color: Colors.blueGrey),
+                          counterText: null,
                         ),
-                        IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () async {
-                            bool delete = false;
-                            await showDialog(
-                                context: context,
-                                child: AlertDialog(
-                                  content: Text("Delete task?"),
-                                  actions: [
-                                    FlatButton(
-                                        child: Text("Confirm"),
-                                        onPressed: () {
-                                          delete = true;
-                                          Navigator.of(context).pop();
-                                        }),
-                                    FlatButton(
-                                        child: Text("Cancel"),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        })
-                                  ],
-                                ));
-                            // if confirmed deletion, end editing and pop out of modal sheet
-                            if (delete) {
-                              await deleteTask(this);
-                              editting = false;
-                              Navigator.of(context).pop();
-                            }
-                          },
-                        )
-                      ]),
-                    ],
-                  )),
-
-                  Padding(
-                    padding: EdgeInsets.all(5),
-                  ),
-
-                  //Task Name
-                  TextFormField(
-                    initialValue: newTask.name,
-                    maxLength: 30,
-                    minLines: 1,
-                    maxLines: 1,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.all(20),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(1),
-                          gapPadding: 1),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(1),
-                          gapPadding: 1),
-                      labelText: 'Task Name',
-                      labelStyle: TextStyle(color: Colors.blueGrey),
-                      counterText: null,
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onChanged: (inputString) {
-                      newTask.name = inputString;
-                    },
-                  ),
-
-                  //Description
-                  TextFormField(
-                    initialValue: newTask.description,
-                    maxLength: 280,
-                    minLines: 1,
-                    maxLines: 10,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.all(20),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(1),
-                          gapPadding: 1),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(1),
-                          gapPadding: 1),
-                      labelText: 'Description',
-                      labelStyle: TextStyle(color: Colors.blueGrey),
-                      counterText: null,
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onChanged: (inputString) {
-                      newTask.description = inputString;
-                    },
-                  ),
-
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    //Date Due
-                    FlatButton(
-                        onPressed: () async {
-                          await _showDatePicker();
+                        textInputAction: TextInputAction.done,
+                        onChanged: (inputString) {
+                          newTask.name = inputString;
+                          saved = false;
                         },
-                        child: Text(formatDateTime(
-                            DateTime.fromMillisecondsSinceEpoch(
-                                newTask.epochDue)))),
-                    //Time Due
-                    FlatButton(
-                        onPressed: () async {
-                          await _showTimePicker();
-                        },
-                        child: Text(formatTimeOfDay(context, initTime))),
-                  ]),
+                      ),
 
-                  //Location
-                  TextFormField(
-                    initialValue: newTask.location,
-                    maxLength: 30,
-                    minLines: 1,
-                    maxLines: 1,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.all(20),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(1),
-                          gapPadding: 1),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(1),
-                          gapPadding: 1),
-                      labelText: 'Location',
-                      labelStyle: TextStyle(color: Colors.blueGrey),
-                      counterText: null,
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onChanged: (inputString) {
-                      newTask.location = inputString;
-                    },
-                  ),
-
-                  //TaskCategory selection
-                  DropdownButton<TaskCategory>(
-                      value: initTaskCategory,
-                      items: List.generate(
-                          TaskCategory.values.length,
-                          (i) => DropdownMenuItem(
-                                value: TaskCategory.values[i],
+                      //Due DateTime
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Due:"),
+                            //Date Due
+                            FlatButton(
+                                onPressed: () async {
+                                  await _showDatePicker();
+                                },
+                                child: Text(formatDateTime(
+                                    DateTime.fromMillisecondsSinceEpoch(
+                                        newTask.epochDue)))),
+                            //Time Due
+                            FlatButton(
+                                onPressed: () async {
+                                  await _showTimePicker();
+                                },
                                 child:
-                                    Text(describeEnum(TaskCategory.values[i])),
-                              )),
-                      onChanged: (val) {
-                        setModalState(() {
-                          newTask.taskCategory = val;
-                        });
-                      }),
+                                    Text(formatTimeOfDay(context, initTime))),
+                          ]),
 
-                  Padding(
-                    padding: EdgeInsets.all(5),
-                  ),
+                      //TaskCategory selection
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Category: "),
+                            DropdownButton<TaskCategory>(
+                                value: initTaskCategory,
+                                items: List.generate(
+                                    TaskCategory.values.length,
+                                    (i) => DropdownMenuItem(
+                                          value: TaskCategory.values[i],
+                                          child: Text(describeEnum(
+                                              TaskCategory.values[i])),
+                                        )),
+                                onChanged: (val) {
+                                  setModalState(() {
+                                    newTask.taskCategory = val;
+                                  });
+                                  saved = false;
+                                })
+                          ]),
 
-                  //Padding to move modal sheet up with keyboard
-                  AnimatedPadding(
-                    padding: MediaQuery.of(context).viewInsets,
-                    duration: const Duration(milliseconds: 150),
-                    curve: Curves.decelerate,
-                    child: new Container(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(),
-                    ),
-                  ),
-                ],
-              );
+                      Padding(
+                        padding: EdgeInsets.all(10),
+                      ),
+
+                      //Description
+                      TextField(
+                        controller: taskDescriptionController,
+                        maxLength: 280,
+                        minLines: 1,
+                        maxLines: 10,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.all(20),
+                          focusedBorder: textFieldBorder,
+                          enabledBorder: textFieldBorder,
+                          labelText: 'Description',
+                          labelStyle: TextStyle(color: Colors.blueGrey),
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onChanged: (inputString) {
+                          newTask.description = inputString;
+                          saved = false;
+                        },
+                      ),
+
+                      Padding(
+                        padding: EdgeInsets.all(5),
+                      ),
+
+                      //Location
+                      TextField(
+                        controller: taskLocationController,
+                        maxLength: 30,
+                        minLines: 1,
+                        maxLines: 1,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.all(20),
+                          focusedBorder: textFieldBorder,
+                          enabledBorder: textFieldBorder,
+                          labelText: 'Location',
+                          labelStyle: TextStyle(color: Colors.blueGrey),
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onChanged: (inputString) {
+                          newTask.location = inputString;
+                          saved = false;
+                        },
+                      ),
+
+                      Padding(
+                        padding: EdgeInsets.all(5),
+                      ),
+
+                      //Padding to move modal sheet up with keyboard
+                      AnimatedPadding(
+                        padding: MediaQuery.of(context).viewInsets,
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.decelerate,
+                        child: new Container(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(),
+                        ),
+                      ),
+                    ],
+                  ));
             });
           });
 
