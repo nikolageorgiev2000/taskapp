@@ -752,6 +752,9 @@ class Task {
     // cannot save task edit if there is a mistake in it
     bool editError = false;
 
+    TextStyle editTextStyle = TextStyle(
+        fontSize: 16, fontWeight: FontWeight.normal, color: Colors.black);
+
     while (editting) {
       // wait for editing to be finished on modal sheet
       await showModalBottomSheet<void>(
@@ -803,7 +806,7 @@ class Task {
 
               // Editable UI
               return Padding(
-                  padding: EdgeInsets.all(5),
+                  padding: EdgeInsets.all(7.5),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
@@ -902,8 +905,33 @@ class Task {
                         maxLength: maxNameLength,
                         minLines: 1,
                         maxLines: 1,
+                        style: editTextStyle,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
+                          isDense: true,
+                          // when task has no name, user cannot see the category drop down,
+                          // but can accidentally interact with it (bug)
+                          // temp fix : set suffix to null if no text, since dropdown is visible otherwise
+                          suffix: (taskNameController.text.length == 0)
+                              ? null
+                              : DropdownButton<TaskCategory>(
+                                  isDense: true,
+                                  icon: Icon(Icons.keyboard_arrow_down),
+                                  value: initTaskCategory,
+                                  style: editTextStyle,
+                                  items: List.generate(
+                                      TaskCategory.values.length,
+                                      (i) => DropdownMenuItem(
+                                            value: TaskCategory.values[i],
+                                            child: Text(describeEnum(
+                                                TaskCategory.values[i])),
+                                          )),
+                                  onChanged: (val) {
+                                    setModalState(() {
+                                      newTask.taskCategory = val;
+                                    });
+                                    saved = false;
+                                  }),
                           contentPadding: EdgeInsets.all(20),
                           errorBorder: textFieldBorder,
                           focusedBorder: textFieldBorder,
@@ -920,52 +948,36 @@ class Task {
                           editError =
                               taskNameController.text.length > maxNameLength;
                         },
-                      ),
+                      ), //TaskCategory selection
 
                       //Due DateTime
                       Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text("Due:"),
-                            //Time Due
-                            FlatButton(
-                                onPressed: () async {
-                                  await _showTimePicker();
-                                },
-                                child:
-                                    Text(formatTimeOfDay(context, initTime))),
+                            Text(
+                              "Due:",
+                              style: editTextStyle,
+                            ),
                             //Date Due
                             FlatButton(
                                 onPressed: () async {
                                   await _showDatePicker();
                                 },
-                                child: Text(formatDateTime(
-                                    DateTime.fromMillisecondsSinceEpoch(
-                                        newTask.epochDue)))),
-                          ]),
-
-                      //TaskCategory selection
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text("Category: "),
-                            DropdownButton<TaskCategory>(
-                                isDense: true,
-                                icon: Icon(Icons.keyboard_arrow_down),
-                                value: initTaskCategory,
-                                items: List.generate(
-                                    TaskCategory.values.length,
-                                    (i) => DropdownMenuItem(
-                                          value: TaskCategory.values[i],
-                                          child: Text(describeEnum(
-                                              TaskCategory.values[i])),
-                                        )),
-                                onChanged: (val) {
-                                  setModalState(() {
-                                    newTask.taskCategory = val;
-                                  });
-                                  saved = false;
-                                })
+                                child: Text(
+                                  formatDateTime(
+                                      DateTime.fromMillisecondsSinceEpoch(
+                                          newTask.epochDue)),
+                                  style: editTextStyle,
+                                )),
+                            //Time Due
+                            FlatButton(
+                                onPressed: () async {
+                                  await _showTimePicker();
+                                },
+                                child: Text(
+                                  formatTimeOfDay(context, initTime),
+                                  style: editTextStyle,
+                                )),
                           ]),
 
                       Padding(
@@ -978,6 +990,7 @@ class Task {
                         maxLength: maxDescriptionLength,
                         minLines: 1,
                         maxLines: 10,
+                        style: editTextStyle,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.all(20),
@@ -1007,6 +1020,7 @@ class Task {
                         maxLength: maxLocationLength,
                         minLines: 1,
                         maxLines: 1,
+                        style: editTextStyle,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.all(20),
