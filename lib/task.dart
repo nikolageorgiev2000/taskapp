@@ -588,7 +588,7 @@ void createTask(context) async {
   await newTask.editTask(context);
 }
 
-Future<void> saveTask(Task task) async {
+Future<void> saveTask(Task task, {bool hasErrors}) async {
   //save task in Firestore (check if it already exists and update it, otherwise create new document)
   CollectionReference tasks = getTaskCollection();
 
@@ -745,6 +745,13 @@ class Task {
     TextEditingController taskLocationController =
         createdTextEditController(newTask.location);
 
+    int maxNameLength = 30;
+    int maxDescriptionLength = 280;
+    int maxLocationLength = 30;
+
+    // cannot save task edit if there is a mistake in it
+    bool editError = false;
+
     while (editting) {
       // wait for editing to be finished on modal sheet
       await showModalBottomSheet<void>(
@@ -806,12 +813,27 @@ class Task {
                           child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                              icon: Icon(Icons.save),
-                              onPressed: () async {
-                                await saveTask(newTask);
-                                saved = true;
-                              }),
+                          // replace save button with "fix issues" warning if there is an error with task info (e.g. name too long)
+                          (editError)
+                              ? new Container(
+                                  margin: const EdgeInsets.all(15),
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: ShapeDecoration(
+                                      shape: RoundedRectangleBorder(
+                                          side: BorderSide(color: Colors.red),
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(10)))),
+                                  child: Text("Fix Issues"),
+                                )
+                              : IconButton(
+                                  icon: Icon(Icons.save),
+                                  onPressed: () async {
+                                    // only save if there is no editError
+                                    if (!editError) {
+                                      await saveTask(newTask);
+                                      saved = true;
+                                    }
+                                  }),
                           Row(children: [
                             IconButton(
                               icon: Icon(Icons.add_to_photos),
@@ -877,14 +899,16 @@ class Task {
                       //Task Name
                       TextField(
                         controller: taskNameController,
-                        maxLength: 30,
+                        maxLength: maxNameLength,
                         minLines: 1,
                         maxLines: 1,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.all(20),
+                          errorBorder: textFieldBorder,
                           focusedBorder: textFieldBorder,
                           enabledBorder: textFieldBorder,
+                          disabledBorder: textFieldBorder,
                           labelText: 'Task Name',
                           labelStyle: TextStyle(color: Colors.blueGrey),
                           counterText: null,
@@ -893,6 +917,8 @@ class Task {
                         onChanged: (inputString) {
                           newTask.name = inputString;
                           saved = false;
+                          editError =
+                              taskNameController.text.length > maxNameLength;
                         },
                       ),
 
@@ -901,6 +927,13 @@ class Task {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text("Due:"),
+                            //Time Due
+                            FlatButton(
+                                onPressed: () async {
+                                  await _showTimePicker();
+                                },
+                                child:
+                                    Text(formatTimeOfDay(context, initTime))),
                             //Date Due
                             FlatButton(
                                 onPressed: () async {
@@ -909,13 +942,6 @@ class Task {
                                 child: Text(formatDateTime(
                                     DateTime.fromMillisecondsSinceEpoch(
                                         newTask.epochDue)))),
-                            //Time Due
-                            FlatButton(
-                                onPressed: () async {
-                                  await _showTimePicker();
-                                },
-                                child:
-                                    Text(formatTimeOfDay(context, initTime))),
                           ]),
 
                       //TaskCategory selection
@@ -924,6 +950,8 @@ class Task {
                           children: [
                             Text("Category: "),
                             DropdownButton<TaskCategory>(
+                                isDense: true,
+                                icon: Icon(Icons.keyboard_arrow_down),
                                 value: initTaskCategory,
                                 items: List.generate(
                                     TaskCategory.values.length,
@@ -947,14 +975,16 @@ class Task {
                       //Description
                       TextField(
                         controller: taskDescriptionController,
-                        maxLength: 280,
+                        maxLength: maxDescriptionLength,
                         minLines: 1,
                         maxLines: 10,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.all(20),
+                          errorBorder: textFieldBorder,
                           focusedBorder: textFieldBorder,
                           enabledBorder: textFieldBorder,
+                          disabledBorder: textFieldBorder,
                           labelText: 'Description',
                           labelStyle: TextStyle(color: Colors.blueGrey),
                         ),
@@ -962,6 +992,8 @@ class Task {
                         onChanged: (inputString) {
                           newTask.description = inputString;
                           saved = false;
+                          editError = taskDescriptionController.text.length >
+                              maxDescriptionLength;
                         },
                       ),
 
@@ -972,14 +1004,16 @@ class Task {
                       //Location
                       TextField(
                         controller: taskLocationController,
-                        maxLength: 30,
+                        maxLength: maxLocationLength,
                         minLines: 1,
                         maxLines: 1,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.all(20),
+                          errorBorder: textFieldBorder,
                           focusedBorder: textFieldBorder,
                           enabledBorder: textFieldBorder,
+                          disabledBorder: textFieldBorder,
                           labelText: 'Location',
                           labelStyle: TextStyle(color: Colors.blueGrey),
                         ),
@@ -987,6 +1021,8 @@ class Task {
                         onChanged: (inputString) {
                           newTask.location = inputString;
                           saved = false;
+                          editError = taskLocationController.text.length >
+                              maxLocationLength;
                         },
                       ),
 
@@ -1014,15 +1050,19 @@ class Task {
         await showDialog(
             context: context,
             child: AlertDialog(
-              content: Text("Save changes?"),
+              content: Text((editError)
+                  ? "Please fix problems with task information entered."
+                  : "Save changes?"),
               actions: [
-                FlatButton(
-                    child: Text("Confirm"),
-                    onPressed: () async {
-                      await saveTask(newTask);
-                      editting = false;
-                      Navigator.of(context).pop();
-                    }),
+                (!editError)
+                    ? FlatButton(
+                        child: Text("Confirm"),
+                        onPressed: () async {
+                          await saveTask(newTask);
+                          editting = false;
+                          Navigator.of(context).pop();
+                        })
+                    : null,
                 FlatButton(
                     child: Text("Discard"),
                     onPressed: () {
@@ -1030,7 +1070,7 @@ class Task {
                       Navigator.of(context).pop();
                     }),
                 FlatButton(
-                    child: Text("Cancel"),
+                    child: Text((editError) ? "Fix" : "Cancel"),
                     onPressed: () {
                       Navigator.of(context).pop();
                     })
