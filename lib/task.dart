@@ -1,20 +1,15 @@
 import 'dart:async';
 import 'dart:core';
-import 'dart:developer';
-import 'dart:io';
 
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 // Import the firebase_core and cloud_firestore plugin
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:taskapp/BaseAuth.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
@@ -29,6 +24,7 @@ class _TaskCardState extends State<TaskCard> {
   Timer _taskTimer;
   int _trackedTime;
 
+  // when user presses start arrow and begins timer on task card
   void startTask() async {
     widget.task.epochStart = DateTime.now().millisecondsSinceEpoch;
     setState(() {
@@ -40,6 +36,7 @@ class _TaskCardState extends State<TaskCard> {
     await saveTask(widget.task);
   }
 
+  // when user presses pause button and pauses timer on task card
   void endTask() async {
     widget.task.workPeriods.add({
       'start': widget.task.epochStart,
@@ -56,6 +53,7 @@ class _TaskCardState extends State<TaskCard> {
     await saveTask(widget.task);
   }
 
+  // set amount of time passed since timer started on task card
   void setTrackedTime() {
     print("Setting time");
     this.setState(() {
@@ -69,7 +67,8 @@ class _TaskCardState extends State<TaskCard> {
     }
   }
 
-  void checkRunningTimer() {
+  // periodically set tracked time to update timer on task card
+  void updateRunningTimer() {
     if (widget.task.epochStart >= 0) {
       if (_taskTimer == null) {
         _taskTimer = Timer.periodic(Duration(seconds: 1), (timer) {
@@ -81,13 +80,15 @@ class _TaskCardState extends State<TaskCard> {
 
   @override
   void didUpdateWidget(TaskCard oldWidget) {
-    checkRunningTimer();
+    // when widget updated start updating timer periodically (it is stopped through deactivation)
+    updateRunningTimer();
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void initState() {
-    checkRunningTimer();
+    // when widget first built start updating timer periodically
+    updateRunningTimer();
     super.initState();
   }
 
@@ -95,6 +96,7 @@ class _TaskCardState extends State<TaskCard> {
   void deactivate() {
     print("DEACTIVATING");
     if (_taskTimer != null) {
+      // if timer running, stop it
       _taskTimer.cancel();
       _taskTimer = null;
     }
@@ -107,6 +109,13 @@ class _TaskCardState extends State<TaskCard> {
   @override
   Widget build(BuildContext context) {
     print("BUILDING TASKCARD: ${widget.task.name}");
+
+    // inside card padding
+    EdgeInsets cardPadding = EdgeInsets.symmetric(vertical: 0, horizontal: 20);
+    // outside card padding
+    EdgeInsets cardMargin = EdgeInsets.symmetric(horizontal: 15, vertical: 4);
+    // card shadow strength
+    double cardElevation = 3;
 
     // Different card depending on whether task is completed or not
     if (widget.task.epochCompleted < 0) {
@@ -126,7 +135,7 @@ class _TaskCardState extends State<TaskCard> {
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+              padding: cardPadding,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -269,8 +278,8 @@ class _TaskCardState extends State<TaskCard> {
                 ],
               ),
             )),
-        elevation: 3,
-        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+        elevation: cardElevation,
+        margin: cardMargin,
       );
     } else {
       //TASK COMPLETED
@@ -287,7 +296,7 @@ class _TaskCardState extends State<TaskCard> {
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+              padding: cardPadding,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -403,8 +412,8 @@ class _TaskCardState extends State<TaskCard> {
                 ],
               ),
             )),
-        elevation: 3,
-        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+        elevation: cardElevation,
+        margin: cardMargin,
       );
     }
   }

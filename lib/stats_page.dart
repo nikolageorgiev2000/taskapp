@@ -79,6 +79,7 @@ class _StatsListState extends State<StatsList> {
     minutesPerCategory =
         minutesPerCategory.map((key, value) => MapEntry(key, value ~/ 60));
     var minutesPerCategoryValues = minutesPerCategory.keys.toList();
+    // sort categories in descending order of time spent working on their tasks
     minutesPerCategoryValues.sort(
         (x, y) => (minutesPerCategory[x] > minutesPerCategory[y] ? -1 : 1));
     _tasksMinutesPerCategory.add(Series(
@@ -91,12 +92,12 @@ class _StatsListState extends State<StatsList> {
 
     var completedPerCategory = Map.fromIterable(TaskCategory.values,
         key: (e) => describeEnum(e), value: (e) => 0);
+    // count occurences
     for (var task in widget.tasks) {
       completedPerCategory[describeEnum(task.taskCategory)] +=
           task.epochCompleted == -1 ? 0 : 1;
     }
-    completedPerCategory =
-        completedPerCategory.map((key, value) => MapEntry(key, value));
+
     List<String> completedPerCategoryValues =
         completedPerCategory.keys.toList();
     completedPerCategoryValues.sort(
@@ -136,14 +137,16 @@ class _StatsListState extends State<StatsList> {
             .add(DateTime.fromMillisecondsSinceEpoch(task.epochCompleted));
       }
     }
+    // shift earliest time a task has been completed by a day so first task shown is not just a vertical line (aesthetics)
     earliestCompleted -= Duration.millisecondsPerDay;
+    // for each category, sort task completion times in ascending order
     for (var l in completedOverTime.keys) {
       completedOverTime[l]
           .add(DateTime.fromMillisecondsSinceEpoch(earliestCompleted));
       completedOverTime[l].sort((x, y) => x.isBefore(y) ? -1 : 1);
     }
-    completedOverTime =
-        completedOverTime.map((key, value) => MapEntry(key, value));
+
+    // sort categories by most recently completed task
     var completedOverTimeValues = completedOverTime.keys.toList();
     completedOverTimeValues.sort((x, y) => (completedOverTime[x]
                 [completedOverTime[x].length - 1]
@@ -153,9 +156,9 @@ class _StatsListState extends State<StatsList> {
     for (String t in completedOverTimeValues) {
       _tasksCompletedOverTime.add(Series(
           id: t,
-          domainFn: (DateTime dt, int i) => dt,
+          domainFn: (DateTime dt, int index) => dt,
           //use array index as cummulative counter of number of completed tasks
-          measureFn: (DateTime dt, int i) => i,
+          measureFn: (DateTime dt, int index) => index,
           data: completedOverTime[t]));
     }
   }
@@ -164,11 +167,12 @@ class _StatsListState extends State<StatsList> {
   Widget build(BuildContext context) {
     text_style.TextStyle chartTitle =
         text_style.TextStyle(fontWeight: FontWeight.w500, fontSize: 16);
+    Padding chartPadding = Padding(
+      padding: EdgeInsets.symmetric(vertical: 15),
+    );
     return ListView(
       children: [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-        ),
+        chartPadding,
         // CHART 1
         Center(child: Text("Minutes Spent per Category", style: chartTitle)),
         Container(
@@ -183,9 +187,7 @@ class _StatsListState extends State<StatsList> {
               ),
               animate: _animate,
             )),
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-        ),
+        chartPadding,
         // CHART 2
         Center(child: Text("Completed Tasks per Category", style: chartTitle)),
         Container(
@@ -200,9 +202,7 @@ class _StatsListState extends State<StatsList> {
               ),
               animate: _animate,
             )),
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-        ),
+        chartPadding,
         // CHART 3
         Center(child: Text("Average Minutes per Category", style: chartTitle)),
         Container(
@@ -217,9 +217,7 @@ class _StatsListState extends State<StatsList> {
               ),
               animate: _animate,
             )),
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-        ),
+        chartPadding,
         // CHART 4
         Center(child: Text("Completed Tasks over Time", style: chartTitle)),
         Container(
@@ -244,9 +242,7 @@ class _StatsListState extends State<StatsList> {
                     entryTextStyle: TextStyleSpec(fontSize: 15)),
               ],
             )),
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-        ),
+        chartPadding,
       ],
     );
   }
