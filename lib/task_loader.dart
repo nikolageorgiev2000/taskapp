@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
+import 'settings.dart';
 import 'package:taskapp/stats_page.dart';
 import 'package:taskapp/task.dart';
 
@@ -72,6 +73,7 @@ class _TaskLoaderState extends State<TaskLoader> {
   List<Task> filterTasks(List<Task> loadedTasks) {
     print("statsPeriodSpecified :  ${widget.statsPeriodSpecified}");
     List<Task> temp = List.from(loadedTasks);
+    // if called from Tasks Page
     if (widget.taskCategorySpecified != null &&
         widget.taskCategorySpecified !=
             TaskCategoryExtension.extendedValues.last) {
@@ -79,7 +81,18 @@ class _TaskLoaderState extends State<TaskLoader> {
           .where((e) =>
               (describeEnum(e.taskCategory) == widget.taskCategorySpecified))
           .toList();
+      // filter only most recently completed tasks if user has setting to true
+      if (UserPrefs.onlyRecentCompletedTasks) {
+        // only get completed tasks from past week
+        temp = temp
+            .where((e) =>
+                e.epochCompleted == -1 ||
+                DateTime.fromMillisecondsSinceEpoch(e.epochCompleted)
+                    .isAfter(DateTime.now().subtract(Duration(days: 7))))
+            .toList();
+      }
     }
+    // if called from Stats Page
     if (widget.statsPeriodSpecified != null) {
       // only show statistics about completed tasks!!!
       temp = temp.where((e) => (e.epochCompleted != -1)).toList();

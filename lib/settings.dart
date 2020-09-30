@@ -25,6 +25,14 @@ void showSettings(BuildContext context) {
                             UserPrefs.animateCharts = val;
                           });
                         }),
+                    SwitchListTile(
+                        title: Text("Most recent completed tasks only"),
+                        value: UserPrefs.onlyRecentCompletedTasks,
+                        onChanged: (val) {
+                          setSettings(() {
+                            UserPrefs.onlyRecentCompletedTasks = val;
+                          });
+                        }),
                     ListTile(
                       title: GestureDetector(
                         child: Text("Sign Out"),
@@ -45,4 +53,5 @@ void showSettings(BuildContext context) {
 
 class UserPrefs {
   static bool animateCharts = true;
+  static bool onlyRecentCompletedTasks = true;
 }
