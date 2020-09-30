@@ -9,7 +9,10 @@ import 'dart:math';
 class TasksPage extends StatelessWidget {
   final String taskCategorySpecified;
 
-  TasksPage(Key key, this.taskCategorySpecified);
+  //double-tap check is not currently used
+  final bool doubleTapped;
+
+  TasksPage(Key key, this.taskCategorySpecified, {this.doubleTapped = false});
 
   @override
   Widget build(BuildContext context) {

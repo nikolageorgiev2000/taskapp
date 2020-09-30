@@ -582,9 +582,10 @@ Task taskFromDoc(QueryDocumentSnapshot d) {
   return newTask;
 }
 
-void createTask(context) async {
+void createTask(context, {String taskCategorySpecified}) async {
   // create blank task and edit it
   Task newTask = Task.blankTask();
+  newTask.taskCategory = stringToTaskCategory(taskCategorySpecified);
   await newTask.editTask(context);
 }
 

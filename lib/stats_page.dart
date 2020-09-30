@@ -8,6 +8,7 @@ import 'package:flutter/src/painting/text_style.dart' as text_style;
 
 //https://google.github.io/charts/flutter/gallery
 import 'package:charts_flutter/flutter.dart';
+import 'package:taskapp/settings.dart';
 import 'package:taskapp/task.dart';
 import 'package:taskapp/task_loader.dart';
 
@@ -49,19 +50,19 @@ class _StatsListState extends State<StatsList> {
 
   @override
   void initState() {
-    refreshSeries();
+    refreshCharts();
 
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant StatsList oldWidget) {
-    refreshSeries();
+    refreshCharts();
 
     super.didUpdateWidget(oldWidget);
   }
 
-  void refreshSeries() {
+  void refreshCharts() {
     _tasksMinutesPerCategory = List();
     _tasksCompletedPerCategory = List();
     _tasksAvgPerCategory = List();
@@ -161,6 +162,10 @@ class _StatsListState extends State<StatsList> {
           measureFn: (DateTime dt, int index) => index,
           data: completedOverTime[t]));
     }
+
+    setState(() {
+      _animate = UserPrefs.animateCharts;
+    });
   }
 
   @override

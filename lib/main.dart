@@ -121,7 +121,12 @@ class _MenuControllerState extends State<MenuController> {
         child: Icon(Icons.add),
         backgroundColor: Colors.lightBlueAccent.shade200,
         onPressed: () {
-          createTask(context);
+          // preset the task category of a new task to the category selected on the TaskPage (UX)
+          String presetTaskCategory = (taskCategorySpecified ==
+                  TaskCategoryExtension.extendedValues.last)
+              ? "Other"
+              : taskCategorySpecified;
+          createTask(context, taskCategorySpecified: presetTaskCategory);
         },
       ),
       null,
