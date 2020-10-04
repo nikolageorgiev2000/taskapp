@@ -14,10 +14,10 @@ class TaskLoader extends StatefulWidget {
   final StatsPeriod statsPeriodSpecified;
   final String taskCategorySpecified;
   const TaskLoader(
+    Key key,
     this.widgetWithTasks,
     this.statsPeriodSpecified,
     this.taskCategorySpecified, {
-    Key key,
     this.widgetNoTasks,
   }) : super(key: key);
 

@@ -87,6 +87,10 @@ class _MenuControllerState extends State<MenuController> {
   bool _loggedIn = false;
   StatsPeriod statsPeriodSpecified;
   String taskCategorySpecified;
+  List<PageStorageKey> pageKeys = [
+    PageStorageKey("TasksPage"),
+    PageStorageKey("StatsPage")
+  ];
 
   void initAuthListener() {
     _auth = FirebaseAuth.instance.authStateChanges().listen((User user) {
@@ -108,8 +112,8 @@ class _MenuControllerState extends State<MenuController> {
   void refreshPages() {
     pages = [
       // TaskList
-      TasksPage(widget.key, taskCategorySpecified),
-      StatsPage(widget.key, statsPeriodSpecified)
+      TasksPage(pageKeys[0], taskCategorySpecified),
+      StatsPage(pageKeys[1], statsPeriodSpecified)
     ];
   }
 
@@ -224,7 +228,7 @@ class _MenuControllerState extends State<MenuController> {
             //Use PageStorage to save the scroll offset using the ScrollController in TaskList
             child: PageStorage(
                 //generate key from name of widget
-                key: PageStorageKey(pages[_selectedIndex].toString()),
+                key: pageKeys[_selectedIndex],
                 bucket: _bucket,
                 child: pages[_selectedIndex])),
         floatingActionButton: floatingButtons[_selectedIndex],

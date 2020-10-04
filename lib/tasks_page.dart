@@ -19,6 +19,7 @@ class TasksPage extends StatelessWidget {
     print("---TasksPage REBUILT");
     print("taskCategorySpecified: $taskCategorySpecified");
     return TaskLoader(
+      this.key,
       (Key key, List<Task> tasks) {
         return TaskList(key, false, tasks);
       },

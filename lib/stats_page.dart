@@ -13,17 +13,19 @@ import 'package:taskapp/task.dart';
 import 'package:taskapp/task_loader.dart';
 
 class StatsPage extends StatelessWidget {
+  final Key key;
   final StatsPeriod statsPeriodSpecified;
-  StatsPage(Key key, this.statsPeriodSpecified);
+  StatsPage(this.key, this.statsPeriodSpecified);
 
   @override
   Widget build(BuildContext context) {
     return TaskLoader(
+      this.key,
       (Key key, List<Task> tasks) {
         return StatsList(key, tasks);
       },
       statsPeriodSpecified,
-      // last is All tasks
+      // not specific task cateogry specified
       null,
     );
   }
@@ -176,6 +178,7 @@ class _StatsListState extends State<StatsList> {
       padding: EdgeInsets.symmetric(vertical: 15),
     );
     return ListView(
+      key: widget.key,
       children: [
         chartPadding,
         // CHART 1
