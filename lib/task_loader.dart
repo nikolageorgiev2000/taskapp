@@ -74,13 +74,15 @@ class _TaskLoaderState extends State<TaskLoader> {
     print("statsPeriodSpecified :  ${widget.statsPeriodSpecified}");
     List<Task> temp = List.from(loadedTasks);
     // if called from Tasks Page
-    if (widget.taskCategorySpecified != null &&
-        widget.taskCategorySpecified !=
-            TaskCategoryExtension.extendedValues.last) {
-      temp = temp
-          .where((e) =>
-              (describeEnum(e.taskCategory) == widget.taskCategorySpecified))
-          .toList();
+    if (widget.taskCategorySpecified != null) {
+      // filter by category unless "All" is selected
+      if (widget.taskCategorySpecified !=
+          TaskCategoryExtension.extendedValues.last) {
+        temp = temp
+            .where((e) =>
+                (describeEnum(e.taskCategory) == widget.taskCategorySpecified))
+            .toList();
+      }
       // filter only most recently completed tasks if user has setting to true
       if (UserPrefs.onlyRecentCompletedTasks) {
         // only get completed tasks from past week
@@ -88,7 +90,7 @@ class _TaskLoaderState extends State<TaskLoader> {
             .where((e) =>
                 e.epochCompleted == -1 ||
                 DateTime.fromMillisecondsSinceEpoch(e.epochCompleted)
-                    .isAfter(DateTime.now().subtract(Duration(days: 7))))
+                    .isAfter(DateTime.now().subtract(Duration(days: 3))))
             .toList();
       }
     }

@@ -24,7 +24,7 @@ class StatsPage extends StatelessWidget {
       },
       statsPeriodSpecified,
       // last is All tasks
-      TaskCategoryExtension.extendedValues.last,
+      null,
     );
   }
 }

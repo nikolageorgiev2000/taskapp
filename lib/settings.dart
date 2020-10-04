@@ -12,6 +12,7 @@ void showSettings(BuildContext context) {
               // height: MediaQuery.of(context).size.height * 0.3,
               children: [
                 ListView(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
                   shrinkWrap: true,
                   // mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -41,6 +42,13 @@ void showSettings(BuildContext context) {
                           Navigator.pop(context);
                         },
                       ),
+                    ),
+                    ListTile(
+                      title: Center(
+                          child: Text(
+                        "Created my free logo at LogoMakr.com.",
+                        style: TextStyle(fontSize: 14),
+                      )),
                     ),
                     //bottom padding of settings list
                     Padding(padding: EdgeInsets.symmetric(vertical: 10)),

@@ -146,6 +146,15 @@ class _MenuControllerState extends State<MenuController> {
   }
 
   @override
+  void deactivate() {
+    if (_auth != null) {
+      _auth.cancel();
+    }
+
+    super.deactivate();
+  }
+
+  @override
   Widget build(BuildContext context) {
     print("---MAIN REBUILT");
     TextStyle appBarTitleStyle = TextStyle(
@@ -223,9 +232,10 @@ class _MenuControllerState extends State<MenuController> {
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           items: [
-            BottomNavigationBarItem(icon: Icon(Icons.alarm_on), label: "Tasks"),
             BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart), label: "Stats"),
+                icon: Icon(Icons.alarm_on), title: Text("Tasks")),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.bubble_chart), title: Text("Stats")),
           ],
           iconSize: 30,
           currentIndex: _selectedIndex,
@@ -236,7 +246,7 @@ class _MenuControllerState extends State<MenuController> {
         ),
       );
     } else {
-      return loginPage();
+      return LoginPage();
     }
   }
 }

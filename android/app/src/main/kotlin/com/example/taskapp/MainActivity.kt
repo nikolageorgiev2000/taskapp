@@ -1,4 +1,4 @@
-package com.example.taskapp
+package com.nicksapps.taskapp
 
 import io.flutter.embedding.android.FlutterActivity
 
