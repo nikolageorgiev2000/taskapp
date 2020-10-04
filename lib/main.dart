@@ -232,10 +232,9 @@ class _MenuControllerState extends State<MenuController> {
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           items: [
+            BottomNavigationBarItem(icon: Icon(Icons.alarm_on), label: "Tasks"),
             BottomNavigationBarItem(
-                icon: Icon(Icons.alarm_on), title: Text("Tasks")),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.bubble_chart), title: Text("Stats")),
+                icon: Icon(Icons.bubble_chart), label: "Stats"),
           ],
           iconSize: 30,
           currentIndex: _selectedIndex,

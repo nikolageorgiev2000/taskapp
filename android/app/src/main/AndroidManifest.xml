@@ -13,7 +13,7 @@
     
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="Simple Task Tracker"
+        android:label="Ace Tasks"
         android:icon="@drawable/taskappicon">
 
         <activity
