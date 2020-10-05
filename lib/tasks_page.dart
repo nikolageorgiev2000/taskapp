@@ -8,11 +8,14 @@ import 'dart:math';
 
 class TasksPage extends StatelessWidget {
   final String taskCategorySpecified;
+  // bool for reseting (e.g. list resets by scrolling back to top)
+  final bool reset;
 
-  //double-tap check is not currently used
-  final bool doubleTapped;
-
-  TasksPage(Key key, this.taskCategorySpecified, {this.doubleTapped = false});
+  TasksPage(
+    Key key,
+    this.taskCategorySpecified, {
+    this.reset = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +24,7 @@ class TasksPage extends StatelessWidget {
     return TaskLoader(
       this.key,
       (Key key, List<Task> tasks) {
-        return TaskList(key, false, tasks);
+        return TaskList(key, tasks, this.reset);
       },
       // statsPeriodSpecified must be null, it's filtering is used
       null,
@@ -31,12 +34,16 @@ class TasksPage extends StatelessWidget {
 }
 
 class TaskList extends StatefulWidget {
-  final bool _doubleTapped;
+  final bool reset;
   final List<Task> _tasks;
 
-  TaskList(Key key, this._doubleTapped, this._tasks) : super(key: key);
+  TaskList(
+    Key key,
+    this._tasks,
+    this.reset,
+  ) : super(key: key);
 
-  bool get doubleTapped => _doubleTapped;
+  bool get doubleTapped => reset;
   List<Task> get tasks => _tasks;
 
   @override
@@ -49,8 +56,9 @@ class _TaskListState extends State<TaskList> {
   //Create list of tasks
   @override
   Widget build(BuildContext context) {
-    //scroll to top if TaskList icon in menu tapped while already on page
-    if (this.widget.doubleTapped) {
+    //scroll to top if Tasks page icon in menu tapped while already on page
+    //need to check if scroll controller has clients (aka is attached to a list)
+    if (this.widget.doubleTapped && scrollController.hasClients) {
       scrollController.animateTo(scrollController.initialScrollOffset,
           duration: Duration(
               milliseconds: min(scrollController.position.pixels ~/ 2, 2000)),
@@ -63,10 +71,10 @@ class _TaskListState extends State<TaskList> {
       controller: scrollController,
       /*Use itermCount (length of list) and itemExtent (height of an item)
         for improved speed switching between tabs (rebuilding list) */
-      itemCount: this.widget._tasks.length,
+      itemCount: this.widget.tasks.length,
       // itemExtent: 150,
       itemBuilder: (context, index) {
-        return TaskCard(this.widget.key, widget._tasks[index]);
+        return TaskCard(this.widget.key, widget.tasks[index]);
       },
     );
   }

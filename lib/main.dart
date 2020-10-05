@@ -80,6 +80,7 @@ class MenuController extends StatefulWidget {
 
 class _MenuControllerState extends State<MenuController> {
   int _selectedIndex = 0;
+  int _prevSelectedIndex = 0;
   final _bucket = PageStorageBucket();
   List<Widget> pages;
   List<Widget> floatingButtons;
@@ -112,8 +113,13 @@ class _MenuControllerState extends State<MenuController> {
   void refreshPages() {
     pages = [
       // TaskList
-      TasksPage(pageKeys[0], taskCategorySpecified),
-      StatsPage(pageKeys[1], statsPeriodSpecified)
+      TasksPage(pageKeys[0], taskCategorySpecified,
+          reset: (_prevSelectedIndex == _selectedIndex)),
+      StatsPage(
+        pageKeys[1],
+        statsPeriodSpecified,
+        reset: (_prevSelectedIndex == _selectedIndex),
+      )
     ];
   }
 
@@ -145,7 +151,9 @@ class _MenuControllerState extends State<MenuController> {
 
   void _onItemTapped(int index) {
     setState(() {
+      _prevSelectedIndex = _selectedIndex;
       _selectedIndex = index;
+      refreshPages();
     });
   }
 

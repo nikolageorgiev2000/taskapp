@@ -15,14 +15,21 @@ import 'package:taskapp/task_loader.dart';
 class StatsPage extends StatelessWidget {
   final Key key;
   final StatsPeriod statsPeriodSpecified;
-  StatsPage(this.key, this.statsPeriodSpecified);
+  // bool for reseting (e.g. list resets by scrolling back to top)
+  final bool reset;
+
+  StatsPage(
+    this.key,
+    this.statsPeriodSpecified, {
+    this.reset = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return TaskLoader(
       this.key,
       (Key key, List<Task> tasks) {
-        return StatsList(key, tasks);
+        return StatsList(key, tasks, this.reset);
       },
       statsPeriodSpecified,
       // not specific task cateogry specified
@@ -32,9 +39,17 @@ class StatsPage extends StatelessWidget {
 }
 
 class StatsList extends StatefulWidget {
-  final List<Task> tasks;
+  final bool reset;
+  final List<Task> _tasks;
 
-  const StatsList(Key key, this.tasks) : super(key: key);
+  StatsList(
+    Key key,
+    this._tasks,
+    this.reset,
+  ) : super(key: key);
+
+  bool get doubleTapped => reset;
+  List<Task> get tasks => _tasks;
 
   @override
   _StatsListState createState() => _StatsListState();
@@ -47,6 +62,8 @@ class _StatsListState extends State<StatsList> {
   List<Series<String, String>> _tasksCompletedPerCategory = List();
   List<Series<String, String>> _tasksAvgPerCategory = List();
   List<Series<DateTime, DateTime>> _tasksCompletedOverTime = List();
+
+  ScrollController scrollController = ScrollController();
 
   bool _animate = true;
 
@@ -172,6 +189,15 @@ class _StatsListState extends State<StatsList> {
 
   @override
   Widget build(BuildContext context) {
+    //scroll to top if Stats page icon in menu tapped while already on page
+    //need to check if scroll controller has clients (aka is attached to a list)
+    if (this.widget.doubleTapped && scrollController.hasClients) {
+      scrollController.animateTo(scrollController.initialScrollOffset,
+          duration: Duration(
+              milliseconds: min(scrollController.position.pixels ~/ 2, 2000)),
+          curve: Curves.easeOutCubic);
+    }
+
     text_style.TextStyle chartTitle =
         text_style.TextStyle(fontWeight: FontWeight.w500, fontSize: 16);
     Padding chartPadding = Padding(
@@ -179,6 +205,7 @@ class _StatsListState extends State<StatsList> {
     );
     return ListView(
       key: widget.key,
+      controller: scrollController,
       children: [
         chartPadding,
         // CHART 1

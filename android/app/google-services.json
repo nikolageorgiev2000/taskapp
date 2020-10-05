@@ -8,43 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:500481206109:android:257fd8cc35c9e45fdc2ab4",
-        "android_client_info": {
-          "package_name": "com.example.taskapp"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "500481206109-9n7l3ieaapplhc7v17igneaajt5cg3re.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.taskapp",
-            "certificate_hash": "fbf09ba8c46a1ecd84fd0826ae813816207417fd"
-          }
-        },
-        {
-          "client_id": "500481206109-umc587vkare1dhdlepp3abt5nv6be7b0.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyD-N-5L9FmIcmGNoSUC1N41acnezBnufrk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "500481206109-umc587vkare1dhdlepp3abt5nv6be7b0.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:500481206109:android:c3095cd13a4feefcdc2ab4",
         "android_client_info": {
           "package_name": "com.nicksapps.taskapp"
@@ -52,11 +15,19 @@
       },
       "oauth_client": [
         {
-          "client_id": "500481206109-opnuuv43d7r5pcldot3tipqc4fv5rdjh.apps.googleusercontent.com",
+          "client_id": "500481206109-qqsvho0nsfd1hn9345o1oc0kv9fcvusu.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nicksapps.taskapp",
-            "certificate_hash": "fbf09ba8c46a1ecd84fd0826ae813816207417fd"
+            "certificate_hash": "aa6e9ac46226bca6e7e22f5c64d7462474865c51"
+          }
+        },
+        {
+          "client_id": "500481206109-qq5qfs5p849ha5do6mbqq3gl3n6fna21.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nicksapps.taskapp",
+            "certificate_hash": "86f6fc86ea0251b7a799fb069205d21135d1c265"
           }
         },
         {

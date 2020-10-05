@@ -13,6 +13,7 @@ class TaskLoader extends StatefulWidget {
   final Function(Key, List<Task>) widgetNoTasks;
   final StatsPeriod statsPeriodSpecified;
   final String taskCategorySpecified;
+
   const TaskLoader(
     Key key,
     this.widgetWithTasks,
