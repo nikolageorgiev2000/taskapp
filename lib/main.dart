@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:taskapp/settings.dart';
+import 'settings.dart';
 
 import 'stats_page.dart';
 import 'BaseAuth.dart';
@@ -111,14 +111,23 @@ class _MenuControllerState extends State<MenuController> {
   }
 
   void refreshPages() {
+    if (_prevSelectedIndex == _selectedIndex) {
+      if (_selectedIndex == 0) {
+        TasksPageSettings.reset = true;
+      }
+      if (_selectedIndex == 1) {
+        StatsPageSettings.reset = true;
+      }
+    }
     pages = [
       // TaskList
-      TasksPage(pageKeys[0], taskCategorySpecified,
-          reset: (_prevSelectedIndex == _selectedIndex)),
+      TasksPage(
+        pageKeys[0],
+        taskCategorySpecified,
+      ),
       StatsPage(
         pageKeys[1],
         statsPeriodSpecified,
-        reset: (_prevSelectedIndex == _selectedIndex),
       )
     ];
   }
@@ -149,6 +158,7 @@ class _MenuControllerState extends State<MenuController> {
     super.initState();
   }
 
+  //menu button tapped action
   void _onItemTapped(int index) {
     setState(() {
       _prevSelectedIndex = _selectedIndex;

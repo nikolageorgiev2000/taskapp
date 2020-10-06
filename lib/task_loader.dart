@@ -34,8 +34,6 @@ class _TaskLoaderState extends State<TaskLoader> {
 
   @override
   void initState() {
-    loadTasks();
-
     listener = taskListListener(refreshTasks);
 
     super.initState();

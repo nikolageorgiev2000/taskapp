@@ -12,24 +12,28 @@ import 'package:taskapp/settings.dart';
 import 'package:taskapp/task.dart';
 import 'package:taskapp/task_loader.dart';
 
+class StatsPageSettings {
+  static bool reset = false;
+}
+
 class StatsPage extends StatelessWidget {
   final Key key;
   final StatsPeriod statsPeriodSpecified;
-  // bool for reseting (e.g. list resets by scrolling back to top)
-  final bool reset;
 
   StatsPage(
     this.key,
-    this.statsPeriodSpecified, {
-    this.reset = false,
-  });
+    this.statsPeriodSpecified,
+  );
 
   @override
   Widget build(BuildContext context) {
     return TaskLoader(
       this.key,
       (Key key, List<Task> tasks) {
-        return StatsList(key, tasks, this.reset);
+        return StatsList(
+          key,
+          tasks,
+        );
       },
       statsPeriodSpecified,
       // not specific task cateogry specified
@@ -39,16 +43,13 @@ class StatsPage extends StatelessWidget {
 }
 
 class StatsList extends StatefulWidget {
-  final bool reset;
   final List<Task> _tasks;
 
   StatsList(
     Key key,
     this._tasks,
-    this.reset,
   ) : super(key: key);
 
-  bool get doubleTapped => reset;
   List<Task> get tasks => _tasks;
 
   @override
@@ -191,11 +192,12 @@ class _StatsListState extends State<StatsList> {
   Widget build(BuildContext context) {
     //scroll to top if Stats page icon in menu tapped while already on page
     //need to check if scroll controller has clients (aka is attached to a list)
-    if (this.widget.doubleTapped && scrollController.hasClients) {
+    if (StatsPageSettings.reset && scrollController.hasClients) {
       scrollController.animateTo(scrollController.initialScrollOffset,
           duration: Duration(
               milliseconds: min(scrollController.position.pixels ~/ 2, 2000)),
           curve: Curves.easeOutCubic);
+      StatsPageSettings.reset = false;
     }
 
     text_style.TextStyle chartTitle =

@@ -6,16 +6,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 
+class TasksPageSettings {
+  static bool reset = false;
+}
+
 class TasksPage extends StatelessWidget {
   final String taskCategorySpecified;
-  // bool for reseting (e.g. list resets by scrolling back to top)
-  final bool reset;
 
   TasksPage(
     Key key,
-    this.taskCategorySpecified, {
-    this.reset = false,
-  });
+    this.taskCategorySpecified,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +25,10 @@ class TasksPage extends StatelessWidget {
     return TaskLoader(
       this.key,
       (Key key, List<Task> tasks) {
-        return TaskList(key, tasks, this.reset);
+        return TaskList(
+          key,
+          tasks,
+        );
       },
       // statsPeriodSpecified must be null, it's filtering is used
       null,
@@ -34,16 +38,13 @@ class TasksPage extends StatelessWidget {
 }
 
 class TaskList extends StatefulWidget {
-  final bool reset;
   final List<Task> _tasks;
 
   TaskList(
     Key key,
     this._tasks,
-    this.reset,
   ) : super(key: key);
 
-  bool get doubleTapped => reset;
   List<Task> get tasks => _tasks;
 
   @override
@@ -52,17 +53,19 @@ class TaskList extends StatefulWidget {
 
 class _TaskListState extends State<TaskList> {
   ScrollController scrollController = ScrollController();
+  bool doubleTapped;
 
   //Create list of tasks
   @override
   Widget build(BuildContext context) {
     //scroll to top if Tasks page icon in menu tapped while already on page
     //need to check if scroll controller has clients (aka is attached to a list)
-    if (this.widget.doubleTapped && scrollController.hasClients) {
+    if (TasksPageSettings.reset && scrollController.hasClients) {
       scrollController.animateTo(scrollController.initialScrollOffset,
           duration: Duration(
               milliseconds: min(scrollController.position.pixels ~/ 2, 2000)),
           curve: Curves.easeOutCubic);
+      TasksPageSettings.reset = false;
     }
     print("BUILDING TASKLIST");
     return ListView.builder(
